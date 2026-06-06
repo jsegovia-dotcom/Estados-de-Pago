@@ -1703,23 +1703,59 @@ function renderReportes(){
 function confirmarEliminarEP(id){
   const ep=db.eps.find(e=>e.id===id);
   if(!ep)return;
-  const nc=db.ncs.find(n=>n.ep_id===id);
-  const factNum=ep.n_factura?`N° ${ep.n_factura}`:(ep.numero||'—');
-  openConfirm(
-    '🗑 Eliminar Estado de Pago',
-    `¿Eliminar el EP ${ep.numero||''} (Factura ${factNum}) del registro?\n\n${nc?'⚠ También se eliminará la Nota de Crédito asociada (NC '+nc.numero+').\n\n':''}Esta acción no se puede deshacer.`,
-    ()=>{
-      closeConfirm();
-      db.eps=db.eps.filter(e=>e.id!==id);
-      if(nc) db.ncs=db.ncs.filter(n=>n.ep_id!==id);
-      save();
-      renderProyectoDetalle();
-      renderCobrosStats();
-      renderCobros();
-      renderReportesIfActive();
-      mostrarToast('EP eliminado del registro','ok');
-    }
-  );
+  // Open the custom delete modal
+  window._elimEPId=id;
+  const p=db.proyectos.find(x=>x.id===ep.proy_id)||{};
+  const mon=ep.moneda||p.moneda||'UF';
+  document.getElementById('elim-ep-info').innerHTML=
+    `<b>EP ${ep.numero||'—'}</b> · Factura N° ${ep.n_factura||'—'} · ${fMonto(ep.total,mon)}`;
+  // Pre-fill NC fields with EP values
+  document.getElementById('elim-nc-num').value='';
+  document.getElementById('elim-nc-fecha').value=today();
+  document.getElementById('elim-nc-monto').value=ep.neto_ret||ep.total||'';
+  document.getElementById('elim-nc-motivo').value='';
+  // Show sin-NC panel by default
+  document.getElementById('elim-panel-nc').style.display='none';
+  document.getElementById('elim-radio-sin').checked=true;
+  document.getElementById('ov-elim-ep').classList.add('open');
+}
+function closeElimEPModal(){
+  document.getElementById('ov-elim-ep').classList.remove('open');
+  window._elimEPId=null;
+}
+function onElimRadioChange(){
+  const conNC=document.getElementById('elim-radio-con').checked;
+  document.getElementById('elim-panel-nc').style.display=conNC?'block':'none';
+}
+function ejecutarEliminarEP(){
+  const id=window._elimEPId;
+  const ep=db.eps.find(e=>e.id===id);
+  if(!ep)return;
+  const conNC=document.getElementById('elim-radio-con').checked;
+  if(conNC){
+    // Keep EP as 'nula' and create NC with same values (negative display)
+    const num=document.getElementById('elim-nc-num').value.trim();
+    if(!num){alert('El número de NC es obligatorio.');return;}
+    const monto=parseFloat(document.getElementById('elim-nc-monto').value)||0;
+    const fecha=document.getElementById('elim-nc-fecha').value;
+    const motivo=document.getElementById('elim-nc-motivo').value.trim()||'Anulación EP '+ep.numero;
+    // Remove any existing NC for this EP first
+    db.ncs=db.ncs.filter(n=>n.ep_id!==id);
+    db.ncs.push({id:uid(),ep_id:id,proy_id:ep.proy_id,numero:num,n_factura:num,fecha,monto,motivo,moneda:ep.moneda||'UF'});
+    ep.estado='nula';
+    mostrarToast('EP anulado con NC — ambos quedan en el registro','ok');
+  } else {
+    // Delete EP entirely
+    db.eps=db.eps.filter(e=>e.id!==id);
+    db.ncs=db.ncs.filter(n=>n.ep_id!==id);
+    mostrarToast('EP eliminado del registro','ok');
+  }
+  closeElimEPModal();
+  save();
+  renderProyectoDetalle();
+  renderCobrosStats();
+  renderCobros();
+  renderReportesIfActive();
 }
 
 function eliminarEP(id){
