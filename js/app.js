@@ -18,6 +18,23 @@ const EMPTY_DB = {
 
 let db = JSON.parse(JSON.stringify(EMPTY_DB));
 
+// ── Toast notification ──
+function mostrarToast(msg, tipo){
+  let t=document.getElementById('jasv-toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='jasv-toast';
+    t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;font-family:"IBM Plex Sans",sans-serif;font-weight:600;z-index:9999;pointer-events:none;transition:opacity .3s;opacity:0;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  t.style.background=tipo==='ok'?'#1A4A2A':'#7B1A1A';
+  t.style.color='#fff';
+  t.style.opacity='1';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>{t.style.opacity='0';},2800);
+}
+
 // ── IndexedDB para recordar el FileHandle entre sesiones ──
 function _initIdb(){
   return new Promise(resolve=>{
