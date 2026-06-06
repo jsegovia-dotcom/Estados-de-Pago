@@ -956,9 +956,11 @@ function openEPModal(id){
     return`<option value="${oc.id}" ${ep?.oc_id===oc.id?'selected':''}>${oc.num} — Saldo: ${fMonto(saldo,mon)}</option>`;
   }).join('');
 
-  // UF
-  document.getElementById('ep-f-uf').value=db.uf_value||'';
-  document.getElementById('ep-uf-hint').textContent=mon==='UF'?`UF vigente: ${fUFVal(db.uf_value)}`:'Moneda: Pesos CLP';
+  // UF — prefill with ep value if editing, else today's value
+  document.getElementById('ep-f-uf').value=(ep&&ep.uf_val)?ep.uf_val:(db.uf_value||'');
+  document.getElementById('ep-uf-hint').textContent=mon==='UF'?`UF vigente hoy: ${fUFVal(db.uf_value)} · editable si OC usa UF anclada`:'Moneda: Pesos CLP';
+  // Recalculate when UF value changes
+  document.getElementById('ep-f-uf').oninput=calcEP;
 
   // IVA label
   const ivaLbl='IVA 19%';
