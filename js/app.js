@@ -547,11 +547,11 @@ function renderProyectoDetalle(){
         </div>
       </div>
       <div class="pb-stats">
-        <div class="pbs"><div class="pbsl">Contrato</div><div class="pbsv">${fMonto(contrato,mon)}</div></div>
-        <div class="pbs"><div class="pbsl">Emitido</div><div class="pbsv">${fMonto(emitido,mon)}</div></div>
+        <div class="pbs"><div class="pbsl">Contrato${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv">${fMonto(contrato,mon)}</div></div>
+        <div class="pbs"><div class="pbsl">Emitido${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv">${fMonto(emitido,mon)}</div></div>
         <div class="pbs"><div class="pbsl">Cobrado${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv" style="color:#E8A0A0">${fMonto(cobrado,mon)}</div></div>
-        <div class="pbs"><div class="pbsl">Por Cobrar${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv" style="color:#FFB347">${fMonto(porCobrar,mon)}</div></div>
-        <div class="pbs"><div class="pbsl">Saldo Contrato</div><div class="pbsv" style="color:#FFD700">${fMonto(saldo,mon)}</div></div>
+        <div class="pbs"><div class="pbsl">Por Cobrar${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv" style="color:#FFB347">${fMonto(porCobrar,mon)}<br><span style="font-size:10px;opacity:.75">${cl_rebaja?'(+ IVA al facturar)':''}</span></div></div>
+        <div class="pbs"><div class="pbsl">Saldo Contrato${cl_rebaja?' (neto)':''}</div><div class="pbsv" style="color:#FFD700">${fMonto(saldo,mon)}<br><span style="font-size:10px;opacity:.75">${cl_rebaja&&saldo>0?'(+ IVA al facturar)':''}</span></div></div>
       </div>
     </div>`;
 
@@ -578,7 +578,7 @@ function renderProyectoDetalle(){
       <td class="ra">${fMonto(ep.neto,mon)}</td>
       <td class="ra">${parseFloat(ep.ret_uf||0)>0?fMonto(ep.ret_uf,mon):'—'}</td>
       <td class="ra">${fMonto(ep.neto_ret,mon)}</td>
-      <td class="ra">${ep.iva_uf>0?fMonto(ep.iva_uf,mon):'—'}</td>
+      <td class="ra">${fMonto(ep.iva_uf,mon)}</td>
       <td class="ra"><b>${fMonto(ep.total,mon)}</b></td>
       <td class="ra">${mon==='UF'?'$'+fCLP(ep.uf_val):'—'}</td>
       <td class="ra">$${fCLP(ep.total_clp)}</td>
@@ -680,8 +680,8 @@ function renderProyectoDetalle(){
               <div class="crow"><span>Monto Contrato</span><span style="font-weight:600">${fMonto(contrato,mon)}</span></div>
               <div class="crow"><span>Monto Emitido (neto c/ret.)</span><span>${fMonto(totalNetoRet,mon)}</span></div>
               <div class="crow"><span>Retención acumulada</span><span style="color:var(--amber)">${fMonto(totalRet,mon)}</span></div>
-              <div class="crow" style="color:var(--success)"><span>Cobrado / Pagado${cl_rebaja?' (neto)':' (c/IVA)'}</span><span>${fMonto(cobrado,mon)}</span></div>
-              <div class="crow" style="color:var(--amber)"><span>Por Cobrar${cl_rebaja?' (neto)':' (c/IVA)'}</span><span>${fMonto(porCobrar,mon)}</span></div>
+              <div class="crow" style="color:var(--success)"><span>Cobrado${cl_rebaja?' (neto)':' (c/IVA)'}</span><span>${fMonto(cobrado,mon)}</span></div>
+              <div class="crow" style="color:var(--amber)"><span>Por Cobrar${cl_rebaja?' (neto)':' (c/IVA)'}${cl_rebaja?' (+ IVA al facturar)':''}</span><span>${fMonto(porCobrar,mon)}</span></div>
               <div class="crow" style="color:var(--red);font-size:13.5px"><span>Saldo Por Emitir</span><span>${fMonto(saldo,mon)}</span></div>
             </div>
             ${mon==='UF'&&ufV2?`
@@ -937,7 +937,7 @@ function openEPModal(id){
   document.getElementById('ep-uf-hint').textContent=mon==='UF'?`UF vigente: $${fCLP(db.uf_value)}`:'Moneda: Pesos CLP';
 
   // IVA label
-  const ivaLbl=cl.iva==='no-rebaja'?'IVA 19% (incl.)':'IVA 19% (rebajado)';
+  const ivaLbl='IVA 19%';
   document.getElementById('ec-iva-lbl').textContent=ivaLbl;
 
   if(ep){
@@ -978,7 +978,7 @@ function calcEP(){
   const rebaja=cl.iva!=='no-rebaja';
   const ret=neto*retPct/100;
   const netoRet=neto-ret;
-  const iva=rebaja?0:netoRet*0.19;
+  const iva=netoRet*0.19;  // siempre se calcula
   const total=netoRet+iva;
   const totalCLP=mon==='UF'?Math.round(total*ufV):Math.round(total);
   const netoCLP=mon==='UF'?Math.round(netoRet*ufV):Math.round(netoRet);
@@ -986,7 +986,7 @@ function calcEP(){
   document.getElementById('ec-neto').textContent=fMonto(neto,mon);
   document.getElementById('ec-ret').textContent=retPct>0?'-'+fMonto(ret,mon):'Sin retención';
   document.getElementById('ec-netoret').textContent=fMonto(netoRet,mon);
-  document.getElementById('ec-iva').textContent=rebaja?'No aplica (rebaja IVA)':fMonto(iva,mon);
+  document.getElementById('ec-iva').textContent=fMonto(iva,mon)+(rebaja?' (mandante rebaja)':'');
   document.getElementById('ec-total').textContent=fMonto(total,mon);
   document.getElementById('ec-clp').textContent='$'+fCLP(totalCLP)+(mon==='UF'?' (UF=$'+fCLP(ufV)+')':'');
 
@@ -1059,7 +1059,7 @@ function guardarEP(){
   const rebaja=cl.iva!=='no-rebaja';
   const ret_uf=neto*retPct/100;
   const neto_ret=neto-ret_uf;
-  const iva_uf=rebaja?0:neto_ret*0.19;
+  const iva_uf=neto_ret*0.19;  // siempre se calcula, aunque mandante rebaje IVA
   const total=neto_ret+iva_uf;
   const total_clp=mon==='UF'?Math.round(total*ufV):Math.round(total);
   const neto_clp=mon==='UF'?Math.round(neto_ret*ufV):Math.round(neto_ret);
@@ -1409,7 +1409,7 @@ function generarPDF(){
       <td style="text-align:center">—</td>
       <td style="text-align:right">${parseFloat(ep.ret_uf||0)>0?fMonto(ep.ret_uf,mon):'—'}</td>
       <td style="text-align:right">${fMonto(ep.neto_ret,mon)}</td>
-      <td style="text-align:right">${ep.iva_uf>0?fMonto(ep.iva_uf,mon):'—'}</td>
+      <td style="text-align:right">${fMonto(ep.iva_uf,mon)}</td>
       <td style="text-align:right;font-weight:700">${fMonto(ep.total,mon)}</td>
       <td style="text-align:right">${mon==='UF'?'$'+fCLP(ep.uf_val):'—'}</td>
       <td style="text-align:right">$${fCLP(ep.total_clp)}</td>
