@@ -1,9 +1,12 @@
 
 // ════════════════════════════════
-//  DATA — servidor local + localStorage fallback
+//  DATA — File System Access API + localStorage fallback
+//  Igual que JASV-ITO
 // ════════════════════════════════
-const SERVER = 'http://localhost:8765';
-const DKEY   = 'jasv_v3_backup';
+const DKEY = 'jasv_cobros_v3';
+let _fileHandle = null;   // FileSystemFileHandle
+let _fileEnabled = false; // true = usando archivo en disco
+let _idb = null;          // IndexedDB para persistir el handle
 
 const EMPTY_DB = {
   clientes:[], proyectos:[], eps:[], ncs:[],
@@ -14,65 +17,172 @@ const EMPTY_DB = {
 };
 
 let db = JSON.parse(JSON.stringify(EMPTY_DB));
-let serverOnline = false;
 
-// Status bar element
-function setServerStatus(online){
-  serverOnline = online;
-  const bar = document.getElementById('server-status-bar');
-  if(!bar) return;
-  if(online){
-    bar.style.background = '#1A4A2A';
-    bar.innerHTML = '🟢 <b>Servidor local activo</b> — datos guardados en tu Mac';
-  } else {
-    bar.style.background = '#7A4500';
-    bar.innerHTML = '🟡 <b>Sin servidor local</b> — los datos se guardan solo en este navegador. Inicia <code>iniciar.command</code> para guardar en tu Mac.';
-  }
+// ── IndexedDB para recordar el FileHandle entre sesiones ──
+function _initIdb(){
+  return new Promise(resolve=>{
+    if(!window.indexedDB){resolve(null);return;}
+    const req = indexedDB.open('jasv_cobros_idb_v1',1);
+    req.onupgradeneeded = e=>e.target.result.createObjectStore('handles',{keyPath:'id'});
+    req.onsuccess = e=>{_idb=e.target.result;resolve(_idb);};
+    req.onerror = ()=>resolve(null);
+  });
 }
-
-async function checkServer(){
-  try{
-    const r = await fetch(SERVER+'/ping', {signal: AbortSignal.timeout(1500)});
-    return r.ok;
-  } catch(e){ return false; }
+function _saveHandle(h){
+  if(!_idb||!h)return;
+  try{_idb.transaction('handles','readwrite').objectStore('handles').put({id:'main',handle:h});}catch(e){}
 }
-
-async function loadData(){
-  // Try server first
-  const online = await checkServer();
-  setServerStatus(online);
-  if(online){
+function _loadHandle(){
+  return new Promise(resolve=>{
+    if(!_idb){resolve(null);return;}
     try{
-      const r = await fetch(SERVER+'/data');
-      const j = await r.json();
-      // Merge with EMPTY_DB to ensure all keys exist
-      db = Object.assign({}, JSON.parse(JSON.stringify(EMPTY_DB)), j);
-      // Also backup to localStorage
-      localStorage.setItem(DKEY, JSON.stringify(db));
-      return;
-    } catch(e){ console.warn('Error leyendo servidor:', e); }
-  }
-  // Fallback: localStorage
+      const req=_idb.transaction('handles','readonly').objectStore('handles').get('main');
+      req.onsuccess=e=>resolve(e.target.result?e.target.result.handle:null);
+      req.onerror=()=>resolve(null);
+    }catch(e){resolve(null);}
+  });
+}
+
+// ── Leer desde archivo ──
+async function _readFile(){
+  if(!_fileHandle)return null;
   try{
-    const raw = localStorage.getItem(DKEY);
-    if(raw) db = Object.assign({}, JSON.parse(JSON.stringify(EMPTY_DB)), JSON.parse(raw));
-  } catch(e){}
+    const file=await _fileHandle.getFile();
+    const text=await file.text();
+    const data=JSON.parse(text);
+    return Object.assign({},JSON.parse(JSON.stringify(EMPTY_DB)),data);
+  }catch(e){return null;}
+}
+
+// ── Escribir al archivo ──
+async function _writeFile(data){
+  if(!_fileHandle)return false;
+  try{
+    const json=JSON.stringify(data,null,2);
+    const writable=await _fileHandle.createWritable();
+    await writable.write(json);
+    await writable.close();
+    return true;
+  }catch(e){console.error('Error escribiendo archivo:',e);return false;}
+}
+
+// ── Actualizar indicador de estado en la UI ──
+function _updateFileStatus(){
+  const bar=document.getElementById('file-status-bar');
+  const btn=document.getElementById('btn-conectar-archivo');
+  if(!bar)return;
+  if(_fileEnabled&&_fileHandle){
+    bar.style.background='#1A4A2A';
+    bar.innerHTML='🟢 <b>Archivo conectado</b> — los datos se guardan en tu Mac';
+    if(btn){btn.textContent='✓ Archivo conectado';btn.style.borderColor='#1A4A2A';btn.style.color='#1A4A2A';}
+  } else {
+    bar.style.background='#5A3000';
+    bar.innerHTML='🟡 <b>Sin archivo</b> — datos solo en el navegador. Clic en <b>Conectar archivo</b> para guardar en tu Mac.';
+    if(btn){btn.textContent='📁 Conectar archivo';btn.style.borderColor='#7B1A1A';btn.style.color='#7B1A1A';}
+  }
+}
+
+// ── Conectar / crear archivo de datos ──
+async function conectarArchivo(){
+  if(!window.showSaveFilePicker){
+    alert('Tu navegador no soporta File System Access API.\nUsa Chrome o Edge para esta función.');
+    return;
+  }
+  try{
+    const h=await window.showSaveFilePicker({
+      suggestedName:'jasv-cobros-datos.json',
+      types:[{description:'JSON',accept:{'application/json':['.json']}}]
+    });
+    _fileHandle=h; _fileEnabled=true;
+    _saveHandle(h);
+    // Escribir datos actuales al nuevo archivo
+    await _writeFile(db);
+    _updateFileStatus();
+    mostrarToast('✅ Archivo conectado. Los datos se guardarán aquí.','ok');
+  }catch(e){if(e.name!=='AbortError')console.error(e);}
+}
+
+// ── Abrir archivo existente ──
+async function abrirArchivoExistente(){
+  if(!window.showOpenFilePicker){
+    alert('Tu navegador no soporta File System Access API.\nUsa Chrome o Edge.');
+    return;
+  }
+  try{
+    const [h]=await window.showOpenFilePicker({
+      types:[{description:'JSON',accept:{'application/json':['.json']}}]
+    });
+    _fileHandle=h; _fileEnabled=true;
+    _saveHandle(h);
+    const data=await _readFile();
+    if(data){db=data;localStorage.setItem(DKEY,JSON.stringify(db));}
+    _updateFileStatus();
+    await fetchUF();
+    renderProyectos();
+    mostrarToast('✅ Archivo cargado correctamente.','ok');
+  }catch(e){if(e.name!=='AbortError')console.error(e);}
 }
 
 async function save(){
-  // Always backup to localStorage
-  localStorage.setItem(DKEY, JSON.stringify(db));
-  if(!serverOnline) return;
-  try{
-    await fetch(SERVER+'/data', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(db)
-    });
-  } catch(e){
-    console.warn('Error guardando en servidor:', e);
-    setServerStatus(false);
+  // Siempre guarda en localStorage como respaldo
+  localStorage.setItem(DKEY,JSON.stringify(db));
+  // Si hay archivo conectado, escribe allí también
+  if(_fileEnabled&&_fileHandle){
+    await _writeFile(db);
   }
+}
+
+async function loadData(){
+  await _initIdb();
+  // Intentar recuperar handle guardado en sesiones anteriores
+  const h=await _loadHandle();
+  if(h){
+    try{
+      const perm=await h.queryPermission({mode:'readwrite'});
+      if(perm==='granted'){
+        _fileHandle=h; _fileEnabled=true;
+        const data=await _readFile();
+        if(data){db=data;localStorage.setItem(DKEY,JSON.stringify(db));}
+        _updateFileStatus();
+        return;
+      }
+      // Permiso no concedido automáticamente — mostrar banner para pedirlo
+      _mostrarBannerPermiso(h);
+    }catch(e){}
+  }
+  // Fallback: localStorage
+  try{
+    const raw=localStorage.getItem(DKEY);
+    if(raw) db=Object.assign({},JSON.parse(JSON.stringify(EMPTY_DB)),JSON.parse(raw));
+  }catch(e){}
+  _updateFileStatus();
+}
+
+// Banner para reconectar archivo con un clic (pide permiso)
+function _mostrarBannerPermiso(h){
+  const bar=document.getElementById('file-status-bar');
+  if(!bar)return;
+  bar.style.background='#5A3000';
+  bar.innerHTML='🟡 <b>Archivo guardado</b> — clic en <button onclick="reconectarArchivo()" style="background:#7B1A1A;color:#fff;border:none;padding:2px 10px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:700">Reconectar</button> para usar tus datos del Mac';
+  window._pendingHandle=h;
+}
+
+async function reconectarArchivo(){
+  const h=window._pendingHandle;
+  if(!h)return;
+  try{
+    const perm=await h.requestPermission({mode:'readwrite'});
+    if(perm==='granted'){
+      _fileHandle=h; _fileEnabled=true;
+      _saveHandle(h);
+      const data=await _readFile();
+      if(data){db=data;localStorage.setItem(DKEY,JSON.stringify(db));}
+      _updateFileStatus();
+      await fetchUF();
+      renderProyectos();
+      mostrarToast('✅ Archivo reconectado.','ok');
+    }
+  }catch(e){console.error(e);}
 }
 // runtime state
 let currentProyId=null;
@@ -1826,7 +1936,6 @@ function showAlertaSaldo(title, bodyHtml){
 //  INIT
 // ════════════════════════════════
 async function init(){
-  await loadData();
   await fetchUF();
   renderProyectos();
 }
