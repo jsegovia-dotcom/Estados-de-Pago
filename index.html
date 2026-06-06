@@ -11,11 +11,11 @@
 <body>
 
 <!-- ══ TOP NAV ══ -->
-<div id="server-status-bar" style="
+<div id="file-status-bar" style="
   background:#555;color:#fff;text-align:center;
   padding:5px 16px;font-size:11.5px;font-family:'IBM Plex Sans',sans-serif;
   transition:background .4s;
-">⏳ Conectando con servidor local…</div>
+">⏳ Cargando…</div>
 <nav class="topnav">
   <div class="nav-logo" style="min-width:180px;padding:0 16px">
     <img src="activos/logo.jpeg" alt="JASV Logo" style="height:36px;width:auto;object-fit:contain;display:block">
@@ -33,7 +33,17 @@
     <span class="nico">📊</span> Reportes
   </button>
   <div class="nav-uf">
-    <div>
+    <button id="btn-conectar-archivo" onclick="conectarArchivo()" style="
+  font-size:11px;padding:4px 12px;border:1.5px solid #7B1A1A;
+  color:#7B1A1A;background:#fff;border-radius:4px;cursor:pointer;
+  font-weight:700;white-space:nowrap;margin-right:4px;
+" title="Crear o conectar archivo de datos en tu Mac">📁 Conectar archivo</button>
+<button onclick="abrirArchivoExistente()" style="
+  font-size:11px;padding:4px 12px;border:1.5px solid #555;
+  color:#555;background:#fff;border-radius:4px;cursor:pointer;
+  white-space:nowrap;margin-right:8px;
+" title="Abrir un archivo datos.json existente">📂 Abrir</button>
+<div>
       <div class="lbl">UF</div>
       <div class="val" id="nav-uf-val">…</div>
     </div>
