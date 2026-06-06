@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JASV — Control de Cobros</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<!-- ══ TOP NAV ══ -->
+<div id="server-status-bar" style="
+  background:#555;color:#fff;text-align:center;
+  padding:5px 16px;font-size:11.5px;font-family:'IBM Plex Sans',sans-serif;
+  transition:background .4s;
+">⏳ Conectando con servidor local…</div>
+<nav class="topnav">
+  <div class="nav-logo" style="min-width:180px;padding:0 16px">
+    <img src="activos/logo.jpeg" alt="JASV Logo" style="height:36px;width:auto;object-fit:contain;display:block">
+  </div>
+  <button class="nav-btn" onclick="goPage('p-clientes')" id="nb-clientes" style="--nb-color:#2A6099">
+    <span class="nico">🏢</span> Clientes
+  </button>
+  <button class="nav-btn active" onclick="goPage('p-proyectos')" id="nb-proyectos" style="--nb-color:#7B1A1A">
+    <span class="nico">📁</span> Proyectos
+  </button>
+  <button class="nav-btn" onclick="goPage('p-cobros')" id="nb-cobros" style="--nb-color:#1A6644">
+    <span class="nico">🧾</span> Facturas / Cobros
+  </button>
+  <button class="nav-btn" onclick="goPage('p-reportes')" id="nb-reportes" style="--nb-color:#5A3A8A">
+    <span class="nico">📊</span> Reportes
+  </button>
+  <div class="nav-uf">
+    <div>
+      <div class="lbl">UF</div>
+      <div class="val" id="nav-uf-val">…</div>
+    </div>
+    <button onclick="fetchUF()">↻</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════
+     PAGE: CLIENTES
+══════════════════════════════ -->
+<div class="page" id="p-clientes">
+  <div class="ph">
+    <div>
+      <h1>Clientes</h1>
+      <div class="phsub" id="clientes-count">—</div>
+    </div>
+    <div class="ph-actions">
+      <input type="text" class="search" style="width:200px" placeholder="Buscar cliente…" oninput="renderClientes()" id="cl-search">
+      <button class="btn pri" onclick="openClienteModal()">＋ Nuevo Cliente</button>
+    </div>
+  </div>
+  <div class="cw">
+    <div class="card">
+      <div id="cl-table-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PAGE: PROYECTOS (lista)
+══════════════════════════════ -->
+<div class="page active" id="p-proyectos">
+  <div class="ph">
+    <div>
+      <h1>Proyectos / Obras</h1>
+      <div class="phsub" id="proyectos-count">—</div>
+    </div>
+    <div class="ph-actions">
+      <input type="text" class="search" style="width:200px" placeholder="Buscar proyecto…" oninput="renderProyectos()" id="pr-search">
+      <button class="btn pri" onclick="openProyModal()">＋ Nuevo Proyecto</button>
+    </div>
+  </div>
+  <div class="cw full">
+    <div class="card">
+      <div id="pr-table-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PAGE: PROYECTO DETALLE
+══════════════════════════════ -->
+<div class="page" id="p-proy-detalle">
+  <!-- banner filled dynamically -->
+  <div id="pd-banner"></div>
+  <div id="pd-action-bar" style="background:var(--white);border-bottom:1px solid var(--paper3);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div id="pd-action-breadcrumb" style="font-size:12px;color:var(--ink3)"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn sm" onclick="editarProyecto()">✏ Editar Proyecto</button>
+      <button class="btn sm" onclick="openOCModal()">＋ Nueva OC</button>
+      <button class="btn sm sec" onclick="openEPModal()" style="font-weight:600">＋ Nuevo EP</button>
+      <button class="btn sm" onclick="exportarExcel()" style="background:#1A6644;color:#fff;border-color:#1A6644">⬇ Excel</button>
+      <button class="btn sm pri" onclick="generarPDF()">⬇ PDF</button>
+    </div>
+  </div>
+  <div class="tabs" id="pd-tabs">
+    <div class="tab active" onclick="switchPDTab('pd-tab-eps')">Estados de Pago</div>
+    <div class="tab" onclick="switchPDTab('pd-tab-saldos')">Control de Saldos</div>
+    <div class="tab" onclick="switchPDTab('pd-tab-ocs')">Órdenes de Compra</div>
+  </div>
+  <div class="cw full" id="pd-tab-eps"></div>
+  <div class="cw" id="pd-tab-saldos" style="display:none"></div>
+  <div class="cw" id="pd-tab-ocs" style="display:none"></div>
+</div>
+
+<!-- ══════════════════════════════
+     PAGE: FACTURAS / COBROS
+══════════════════════════════ -->
+<div class="page" id="p-cobros">
+  <div class="ph">
+    <div>
+      <h1>Facturas / Cobros</h1>
+      <div class="phsub" id="cobros-count">Listado general de todas las obras</div>
+    </div>
+    <div class="ph-actions">
+      <input type="text" class="search" style="width:200px" placeholder="Factura, proyecto, cliente…" oninput="renderCobros()" id="co-search">
+      <select class="fsel" id="co-filt-cl" onchange="renderCobros()"><option value="">Todos los clientes</option></select>
+      <select class="fsel" id="co-filt-est" onchange="renderCobros()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="pagado">Pagado</option>
+        <option value="vencido">Vencido</option>
+        <option value="nula">Anulada</option>
+      </select>
+      <button class="btn" onclick="exportJSON()">⬇ Exportar JSON</button>
+    </div>
+  </div>
+  <div class="cw full">
+    <div class="stats" id="cobros-stats"></div>
+    <div class="card">
+      <div id="co-table-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PAGE: REPORTES
+══════════════════════════════ -->
+<div class="page" id="p-reportes">
+  <div class="ph"><h1>Reportes</h1></div>
+  <div class="cw">
+    <div id="rep-content"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL: CLIENTE
+══════════════════════════════ -->
+<div class="overlay" id="ov-cliente" onclick="ovClose(event,'ov-cliente')">
+<div class="modal" style="max-width:520px">
+  <div class="mh"><h3 id="cl-modal-title">Nuevo Cliente</h3><button class="xbtn" onclick="closeClienteModal()">×</button></div>
+  <div class="mb">
+    <div class="fg" style="gap:14px">
+      <div class="ff full"><label>Razón Social / Nombre</label><input type="text" id="cl-f-nombre" placeholder="Ej: INACAP"></div>
+      <div class="ff"><label>RUT</label><input type="text" id="cl-f-rut" placeholder="96.XXX.XXX-X"></div>
+      <div class="ff"><label>Giro</label><input type="text" id="cl-f-giro" placeholder="Institución de Educación Superior"></div>
+      <div class="ff full"><label>Dirección</label><input type="text" id="cl-f-dir" placeholder="Av. Vitacura 10.000, Santiago"></div>
+      <div class="ff"><label>Contacto</label><input type="text" id="cl-f-contacto" placeholder="Nombre contacto"></div>
+      <div class="ff"><label>Email</label><input type="email" id="cl-f-email" placeholder="contacto@cliente.cl"></div>
+      <div class="ff"><label>El cliente rebaja IVA</label>
+        <select id="cl-f-iva">
+          <option value="rebaja">Sí — trabaja con Neto (empresa privada)</option>
+          <option value="no-rebaja">No — paga con IVA incluido (ed. u otro)</option>
+        </select>
+      </div>
+      <div class="ff"><label>Plazo pago habitual (días)</label><input type="number" id="cl-f-plazo" value="30" min="0"></div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="closeClienteModal()">Cancelar</button>
+    <button class="btn pri" id="cl-modal-btn" onclick="guardarCliente()">Crear Cliente</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL: PROYECTO
+══════════════════════════════ -->
+<div class="overlay" id="ov-proyecto" onclick="ovClose(event,'ov-proyecto')">
+<div class="modal" style="max-width:640px">
+  <div class="mh"><h3 id="pr-modal-title">Nuevo Proyecto</h3><button class="xbtn" onclick="closeProyModal()">×</button></div>
+  <div class="mb" style="padding-bottom:0">
+    <div class="fg" style="gap:14px;margin-bottom:16px">
+      <div class="ff full"><label>Nombre de la Obra / Proyecto</label><input type="text" id="pr-f-nombre" placeholder="Ej: Mejoramiento Cubierta INACAP La Serena"></div>
+      <div class="ff"><label>Cliente (Mandante)</label><select id="pr-f-cliente"><option value="">Seleccionar…</option></select></div>
+      <div class="ff"><label>Código interno (opcional)</label><input type="text" id="pr-f-cod" placeholder="Ej: INACAP-LS-2024"></div>
+      <div class="ff full"><label>Dirección de la Obra</label><input type="text" id="pr-f-dir" placeholder="Ubicación de la obra"></div>
+      <div class="ff"><label>Moneda</label>
+        <select id="pr-f-moneda" onchange="renderLineasModal()">
+          <option value="UF">UF (Unidad de Fomento)</option>
+          <option value="CLP">Pesos Chilenos ($)</option>
+        </select>
+      </div>
+      <div class="ff"><label>Retención (%)</label><input type="number" id="pr-f-ret" value="0" step="0.1" min="0" max="100"></div>
+      <div class="ff"><label>Fecha Inicio</label><input type="date" id="pr-f-inicio"></div>
+    </div>
+
+    <!-- DETALLE FACTURACIÓN ESTIMADA -->
+    <div style="border-top:1px solid var(--paper3);padding:14px 0 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3)">Detalle Facturación Estimada</div>
+          <div style="font-size:11px;color:var(--ink4);margin-top:2px">El monto del contrato se calcula automáticamente desde estas líneas</div>
+        </div>
+        <button class="btn sm pri" type="button" onclick="agregarLineaModal()">＋ Agregar línea</button>
+      </div>
+      <div id="pr-lineas-tabla" style="margin-bottom:10px"></div>
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:10px 14px;background:var(--paper);border-radius:var(--r);border:1px solid var(--paper3)">
+        <span style="font-size:12px;color:var(--ink3)">Monto Contrato Estimado Total:</span>
+        <span id="pr-total-display" style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:var(--green)">0,00</span>
+      </div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="closeProyModal()">Cancelar</button>
+    <button class="btn pri" id="pr-modal-btn" onclick="guardarProyecto()">Crear Proyecto</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL: OC
+══════════════════════════════ -->
+<div class="overlay" id="ov-oc" onclick="ovClose(event,'ov-oc')">
+<div class="modal" style="max-width:460px">
+  <div class="mh"><h3 id="oc-modal-title">Nueva Orden de Compra</h3><button class="xbtn" onclick="closeOCModal()">×</button></div>
+  <div class="mb">
+    <div class="fg" style="gap:14px">
+      <div class="ff"><label>N° Orden de Compra</label><input type="text" id="oc-f-num" placeholder="OC IPN607579"></div>
+      <div class="ff"><label>Fecha OC</label><input type="date" id="oc-f-fecha"></div>
+      <div class="ff full"><label>Monto OC</label><input type="number" id="oc-f-monto" step="0.01" placeholder="0.00" oninput="calcOC()"></div>
+      <div class="ff full"><label id="oc-moneda-label">Moneda: UF</label></div>
+      <div class="ff full"><label>Descripción (opcional)</label><input type="text" id="oc-f-desc" placeholder="Descripción de la OC"></div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="closeOCModal()">Cancelar</button>
+    <button class="btn pri" id="oc-modal-btn" onclick="guardarOC()">Guardar OC</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL: ESTADO DE PAGO
+══════════════════════════════ -->
+<div class="overlay" id="ov-ep" onclick="ovClose(event,'ov-ep')">
+<div class="modal" style="max-width:760px">
+  <div class="mh"><h3 id="ep-modal-title">Nuevo Estado de Pago</h3><button class="xbtn" onclick="closeEPModal()">×</button></div>
+  <div class="mb">
+    <div class="fg" style="gap:14px">
+      <div class="ff"><label>N° Estado de Pago</label><input type="text" id="ep-f-num" placeholder="EP-001" readonly style="background:var(--paper2)"></div>
+      <div class="ff"><label>N° Factura SII</label><input type="text" id="ep-f-factura" placeholder="Ej: 304"></div>
+      <div class="ff"><label>Fecha Emisión Factura</label><input type="date" id="ep-f-fecha" oninput="onEPFecha()"></div>
+      <div class="ff"><label>Fecha Vencimiento</label><input type="date" id="ep-f-venc"></div>
+      <div class="ff full"><label>Glosa / Detalle del Cobro</label>
+        <textarea id="ep-f-glosa" rows="3" placeholder="Ej: Estado de Pago 2 ITO Marzo-Abril UF 141,43 + 1 visita J. Segovia UF 12"></textarea>
+      </div>
+      <div class="sdiv">Montos</div>
+      <div class="ff"><label>UF del día (al emitir)</label><input type="number" id="ep-f-uf" step="0.01" readonly style="background:var(--paper2)"><span class="hint" id="ep-uf-hint">Valor vigente</span></div>
+      <div class="ff"><label id="ep-neto-lbl">Monto Neto (UF)</label><input type="number" id="ep-f-neto" step="0.01" placeholder="0.00" oninput="calcEP()"></div>
+      <div class="ff"><label>Retención (%)</label><input type="number" id="ep-f-ret" value="0" step="0.1" min="0" oninput="calcEP()"></div>
+      <div class="ff"><label>OC a cargar</label><select id="ep-f-oc" onchange="calcEP()"><option value="">Sin OC (contra contrato)</option></select></div>
+      <div class="ff full">
+        <div class="cbox accent" id="ep-calc-box">
+          <div class="crow"><span>Subtotal Neto</span><span id="ec-neto">—</span></div>
+          <div class="crow"><span>Retención</span><span id="ec-ret">—</span></div>
+          <div class="crow"><span>Monto Neto c/retención</span><span id="ec-netoret">—</span></div>
+          <div class="crow"><span id="ec-iva-lbl">IVA 19%</span><span id="ec-iva">—</span></div>
+          <div class="crow" style="color:var(--green)"><span>Total Factura</span><span id="ec-total">—</span></div>
+          <div class="crow" style="font-size:11.5px;color:var(--ink3)"><span>Total en $ (CLP)</span><span id="ec-clp">—</span></div>
+        </div>
+      </div>
+      <div class="sdiv">Documento PDF</div>
+      <div class="ff full">
+        <input type="file" id="ep-pdf-input" accept=".pdf" style="display:none" onchange="handleEPPdf(event)">
+        <div id="ep-pdf-zone" class="pdf-zone" onclick="document.getElementById('ep-pdf-input').click()">
+          <div style="font-size:22px">📎</div>
+          <p>Adjuntar PDF de la factura SII (opcional)</p>
+        </div>
+        <div id="ep-pdf-selected" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="closeEPModal()">Cancelar</button>
+    <button class="btn pri" onclick="guardarEP()">Guardar Estado de Pago</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL: NOTA DE CRÉDITO
+══════════════════════════════ -->
+<div class="overlay" id="ov-nc" onclick="ovClose(event,'ov-nc')">
+<div class="modal" style="max-width:500px">
+  <div class="mh"><h3>Nota de Crédito — Anular EP</h3><button class="xbtn" onclick="closeNCModal()">×</button></div>
+  <div class="mb">
+    <div id="nc-ep-info" class="alert info" style="margin-bottom:14px"></div>
+    <div class="fg" style="gap:14px">
+      <div class="ff"><label>N° Nota de Crédito</label><input type="text" id="nc-f-num" placeholder="NC-001"></div>
+      <div class="ff"><label>Fecha Emisión NC</label><input type="date" id="nc-f-fecha"></div>
+      <div class="ff"><label>Monto Neto NC</label><input type="number" id="nc-f-monto" step="0.01" placeholder="Se pre-llena con el EP"></div>
+      <div class="ff"><label>Moneda</label><input type="text" id="nc-f-moneda" readonly style="background:var(--paper2)"></div>
+      <div class="ff full"><label>Motivo de Anulación</label><textarea id="nc-f-motivo" placeholder="Razón por la que se anula esta factura…"></textarea></div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="closeNCModal()">Cancelar</button>
+    <button class="btn gold" onclick="guardarNC()">Registrar NC y Anular EP</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL: REGISTRAR / EDITAR PAGO
+══════════════════════════════ -->
+<div class="overlay" id="ov-pago" onclick="ovClose(event,'ov-pago')">
+<div class="modal" style="max-width:440px">
+  <div class="mh"><h3 id="pago-modal-title">Registrar Pago</h3><button class="xbtn" onclick="closePagoModal()">×</button></div>
+  <div class="mb">
+    <div class="fg" style="gap:14px">
+      <div class="ff full"><label>Factura</label><input type="text" id="pago-label" readonly style="background:var(--paper2)"></div>
+      <div class="ff full"><label>Estado de Pago</label>
+        <select id="pago-estado" onchange="onPagoEstadoChange()">
+          <option value="pagado">✓ Pagado</option>
+          <option value="pendiente">○ Pendiente (no pagado)</option>
+          <option value="parcial">◑ Pago Parcial</option>
+        </select>
+      </div>
+      <div id="pago-fecha-wrap" class="ff"><label>Fecha de Pago</label><input type="date" id="pago-fecha"></div>
+      <div id="pago-monto-wrap" class="ff"><label>Monto Recibido ($)</label><input type="number" id="pago-monto" placeholder="0"></div>
+    </div>
+    <div id="pago-revert-warn" style="display:none;margin-top:12px" class="alert warn">
+      ⚠ Al marcar como Pendiente se borrará la fecha y monto de pago registrados.
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="closePagoModal()">Cancelar</button>
+    <button class="btn pri" id="pago-confirm-btn" onclick="confirmarPago()">Confirmar</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL: CONFIRM DELETE
+══════════════════════════════ -->
+<div class="overlay" id="ov-confirm" style="align-items:center">
+<div class="confirm-box">
+  <h4 id="cf-title">¿Confirmar acción?</h4>
+  <p id="cf-msg">Esta acción no se puede deshacer.</p>
+  <div class="cf-actions">
+    <button class="btn" onclick="closeConfirm()">Cancelar</button>
+    <button class="btn danger" id="cf-btn">Confirmar</button>
+  </div>
+</div>
+</div>
+
+  <script src="js/app.js"></script>
+</body></html>
