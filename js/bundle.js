@@ -629,10 +629,10 @@ function renderProyectoDetalle(){
         <td class="ra" style="color:var(--red);font-weight:500">-${fMonto(nc.monto,mon)}</td>
         <td class="ra" style="color:var(--ink4)">—</td>
         <td class="ra" style="color:var(--red);font-weight:500">-${fMonto(nc.monto,mon)}</td>
-        <td class="ra" style="color:var(--ink4)">—</td>
-        <td class="ra" style="color:var(--red);font-weight:700">-${fMonto(nc.monto,mon)}</td>
-        <td class="ra" style="color:var(--ink4)">—</td>
-        <td class="ra" style="color:var(--red)">-$${fCLP(nc.monto*(mon==='UF'?(db.uf_value||ep.uf_val||1):1))}</td>
+        <td class="ra" style="color:var(--red)">-${fMonto(nc.monto*0.19,mon)}</td>
+        <td class="ra" style="color:var(--red);font-weight:700">-${fMonto(nc.monto*1.19,mon)}</td>
+        <td class="ra" style="color:var(--ink4)">${mon==='UF'?fUFVal(ep.uf_val):'—'}</td>
+        <td class="ra" style="color:var(--red)">-$${fCLP(nc.monto*1.19*(mon==='UF'?(ep.uf_val||db.uf_value||1):1))}</td>
         <td>${badge('nc',null)}</td>
         <td style="white-space:nowrap;padding:5px 8px">
           <div style="display:flex;gap:4px;align-items:center">
@@ -943,7 +943,7 @@ function openEPModal(id){
   document.getElementById('ep-neto-lbl').textContent=`Monto Neto (${mon})`;
 
   // auto EP number
-  const epsDelProy=db.eps.filter(e=>e.proy_id===currentProyId&&!id);
+  const epsDelProy=db.eps.filter(e=>e.proy_id===currentProyId&&e.estado!=='nula'&&!id);
   const siguienteNum=epsDelProy.length+1;
   document.getElementById('ep-f-num').value=ep?ep.numero:`EP-${String(siguienteNum).padStart(3,'0')}`;
 
@@ -1198,7 +1198,11 @@ function guardarNC(){
   if(!num){alert('El número de NC es obligatorio.');return;}
   const ep=db.eps.find(e=>e.id===ncEPId);
   if(!ep)return;
-  db.ncs.push({id:uid(),ep_id:ncEPId,proy_id:ep.proy_id,numero:num,n_factura:num,fecha:document.getElementById('nc-f-fecha').value,monto,motivo:document.getElementById('nc-f-motivo').value.trim(),moneda:document.getElementById('nc-f-moneda').value});
+  const gnc_mon=document.getElementById('nc-f-moneda').value;
+  const gnc_iva=monto*0.19;
+  const gnc_total=monto+gnc_iva;
+  const gnc_total_clp=Math.round(gnc_total*(gnc_mon==='UF'?(ep.uf_val||db.uf_value||1):1));
+  db.ncs.push({id:uid(),ep_id:ncEPId,proy_id:ep.proy_id,numero:num,n_factura:num,fecha:document.getElementById('nc-f-fecha').value,monto,iva:gnc_iva,total:gnc_total,total_clp:gnc_total_clp,motivo:document.getElementById('nc-f-motivo').value.trim(),moneda:gnc_mon});
   ep.estado='nula';
   save();closeNCModal();renderProyectoDetalle();renderCobrosStats();renderCobros();renderReportesIfActive();
 }
@@ -1755,7 +1759,10 @@ function ejecutarEliminarEP(){
     const motivo=document.getElementById('elim-nc-motivo').value.trim()||'Anulación EP '+ep.numero;
     // Remove any existing NC for this EP first
     db.ncs=db.ncs.filter(n=>n.ep_id!==id);
-    db.ncs.push({id:uid(),ep_id:id,proy_id:ep.proy_id,numero:num,n_factura:num,fecha,monto,motivo,moneda:ep.moneda||'UF'});
+    const nc_iva=monto*0.19;
+    const nc_total=monto+nc_iva;
+    const nc_total_clp=Math.round(nc_total*(ep.moneda==='UF'?(ep.uf_val||db.uf_value||1):1));
+    db.ncs.push({id:uid(),ep_id:id,proy_id:ep.proy_id,numero:num,n_factura:num,fecha,monto,iva:nc_iva,total:nc_total,total_clp:nc_total_clp,motivo,moneda:ep.moneda||'UF'});
     ep.estado='nula';
     mostrarToast('EP anulado con NC — ambos quedan en el registro','ok');
   } else {
