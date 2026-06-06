@@ -1701,6 +1701,7 @@ function confirmarEliminarEP(id){
     '🗑 Eliminar Estado de Pago',
     `¿Eliminar el EP ${ep.numero||''} (Factura ${factNum}) del registro?\n\n${nc?'⚠ También se eliminará la Nota de Crédito asociada (NC '+nc.numero+').\n\n':''}Esta acción no se puede deshacer.`,
     ()=>{
+      closeConfirm();
       db.eps=db.eps.filter(e=>e.id!==id);
       if(nc) db.ncs=db.ncs.filter(n=>n.ep_id!==id);
       save();
