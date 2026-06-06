@@ -272,7 +272,7 @@
         <textarea id="ep-f-glosa" rows="3" placeholder="Ej: Estado de Pago 2 ITO Marzo-Abril UF 141,43 + 1 visita J. Segovia UF 12"></textarea>
       </div>
       <div class="sdiv">Montos</div>
-      <div class="ff"><label>UF del día (al emitir)</label><input type="number" id="ep-f-uf" step="0.01" readonly style="background:var(--paper2)"><span class="hint" id="ep-uf-hint">Valor vigente</span></div>
+      <div class="ff"><label>UF del día (al emitir)</label><input type="number" id="ep-f-uf" step="0.01" placeholder="Ej: 40712.34"><span class="hint" id="ep-uf-hint">Valor vigente · editable si OC usa UF anclada</span></div>
       <div class="ff"><label id="ep-neto-lbl">Monto Neto (UF)</label><input type="number" id="ep-f-neto" step="0.01" placeholder="0.00" oninput="calcEP()"></div>
       <div class="ff"><label>Retención (%)</label><input type="number" id="ep-f-ret" value="0" step="0.1" min="0" oninput="calcEP()"></div>
       <div class="ff"><label>OC a cargar</label><select id="ep-f-oc" onchange="calcEP()"><option value="">Sin OC (contra contrato)</option></select></div>
