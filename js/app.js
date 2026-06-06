@@ -588,7 +588,8 @@ function renderProyectoDetalle(){
           ${!isNula&&!isPagado?`<button class="btn xs" onclick="openPagoModal('${ep.id}')" title="Registrar pago" style="background:#fff;color:#555;border:1px solid #C0C0C0;font-weight:500" onmouseover="this.style.background='#F0F7F3';this.style.borderColor='#1A4A2A';this.style.color='#1A4A2A'" onmouseout="this.style.background='#fff';this.style.borderColor='#C0C0C0';this.style.color='#555'">○ Pagar</button>`:''}
           ${!isNula&&isPagado?`<button class="btn xs" onclick="openPagoModal('${ep.id}')" title="Pagado el ${fDate(ep.fecha_pago)} — clic para modificar" style="background:var(--success);color:#fff;border-color:var(--success);font-weight:600;cursor:pointer" onmouseover="this.style.opacity='.85';this.title='Pagado el ${fDate(ep.fecha_pago)} — clic para modificar'" onmouseout="this.style.opacity='1'">✓ Pagado</button>`:''}
           ${!isNula?`<button class="btn xs danger" onclick="openNCModal('${ep.id}')" title="Anular con Nota de Crédito">NC</button>`:''}
-          ${isNula?`<button class="btn xs danger" onclick="eliminarEP('${ep.id}')" title="Eliminar factura anulada del registro">🗑 Eliminar</button>`:''}
+          <button class="btn xs danger" onclick="confirmarEliminarEP('${ep.id}')" title="Eliminar EP del registro">🗑</button>
+          ${isNula?`<button class="btn xs danger" onclick="eliminarEP('${ep.id}')" title="Eliminar factura anulada del registro">Eliminar</button>`:''}
         </div>
       </td>
     </tr>`;
@@ -1689,6 +1690,27 @@ function renderReportes(){
 // ════════════════════════════════
 //  ELIMINAR EP / NC
 // ════════════════════════════════
+function confirmarEliminarEP(id){
+  const ep=db.eps.find(e=>e.id===id);
+  if(!ep)return;
+  const nc=db.ncs.find(n=>n.ep_id===id);
+  const factNum=ep.n_factura?`N° ${ep.n_factura}`:(ep.numero||'—');
+  openConfirm(
+    '🗑 Eliminar Estado de Pago',
+    `¿Eliminar el EP ${ep.numero||''} (Factura ${factNum}) del registro?\n\n${nc?'⚠ También se eliminará la Nota de Crédito asociada (NC '+nc.numero+').\n\n':''}Esta acción no se puede deshacer.`,
+    ()=>{
+      db.eps=db.eps.filter(e=>e.id!==id);
+      if(nc) db.ncs=db.ncs.filter(n=>n.ep_id!==id);
+      save();
+      renderProyectoDetalle();
+      renderCobrosStats();
+      renderCobros();
+      renderReportesIfActive();
+      mostrarToast('EP eliminado del registro','ok');
+    }
+  );
+}
+
 function eliminarEP(id){
   const ep=db.eps.find(e=>e.id===id);
   if(!ep)return;
