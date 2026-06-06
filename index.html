@@ -372,4 +372,62 @@
 </div>
 
   <script src="js/app.js"></script>
+<!-- ══ OVERLAY ELIMINAR EP ══ -->
+<div id="ov-elim-ep" class="overlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <span>🗑 Eliminar / Anular Estado de Pago</span>
+      <button class="close-btn" onclick="closeElimEPModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="elim-ep-info" style="background:var(--paper2);border:1px solid var(--paper3);border-radius:var(--r);padding:10px 14px;font-size:13px;margin-bottom:16px;color:var(--ink2)"></div>
+
+      <p style="font-size:13px;color:var(--ink2);margin-bottom:14px">¿Cómo deseas eliminar este EP?</p>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 14px;border:1.5px solid var(--paper3);border-radius:var(--r);font-size:13px" onclick="document.getElementById('elim-radio-sin').checked=true;onElimRadioChange()">
+          <input type="radio" id="elim-radio-sin" name="elim-tipo" value="sin" checked style="margin-top:2px;accent-color:var(--red)">
+          <div>
+            <b style="color:var(--ink)">Sin Nota de Crédito</b><br>
+            <span style="color:var(--ink3);font-size:11.5px">Elimina el EP del registro completamente. No queda rastro.</span>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 14px;border:1.5px solid var(--paper3);border-radius:var(--r);font-size:13px" onclick="document.getElementById('elim-radio-con').checked=true;onElimRadioChange()">
+          <input type="radio" id="elim-radio-con" name="elim-tipo" value="con" style="margin-top:2px;accent-color:var(--red)">
+          <div>
+            <b style="color:var(--ink)">Con Nota de Crédito</b><br>
+            <span style="color:var(--ink3);font-size:11.5px">Mantiene el EP y registra la NC. Ambos quedan tenues y suman cero.</span>
+          </div>
+        </label>
+      </div>
+
+      <div id="elim-panel-nc" style="display:none;border-top:1px solid var(--paper3);padding-top:14px;margin-top:4px">
+        <div style="font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Datos de la Nota de Crédito</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="fl">N° Nota de Crédito *</label>
+            <input class="fi" id="elim-nc-num" type="text" placeholder="Ej: 45">
+          </div>
+          <div>
+            <label class="fl">Fecha NC</label>
+            <input class="fi" id="elim-nc-fecha" type="date">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label class="fl">Monto NC (igual al EP)</label>
+          <input class="fi" id="elim-nc-monto" type="number" step="0.01" min="0">
+        </div>
+        <div>
+          <label class="fl">Motivo / Glosa</label>
+          <input class="fi" id="elim-nc-motivo" type="text" placeholder="Ej: Anulación por error de monto">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeElimEPModal()">Cancelar</button>
+      <button class="btn danger" onclick="ejecutarEliminarEP()" style="font-weight:700">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 </body></html>
