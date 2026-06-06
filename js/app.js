@@ -212,13 +212,14 @@ async function fetchUF(){
 }
 function updateUFUI(){
   const v=db.uf_value;
-  document.getElementById('nav-uf-val').textContent=v?'$'+fCLP(v):'—';
+  document.getElementById('nav-uf-val').textContent=v?fUFVal(v):'—';
 }
 
 // ════════════════════════════════
 //  FORMAT
 // ════════════════════════════════
 function fCLP(n){return Math.round(n||0).toLocaleString('es-CL');}
+function fUFVal(n){return '$'+parseFloat(n||0).toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fUF(n){return parseFloat(n||0).toFixed(2).replace('.',',');}
 function fMonto(n,mon){return mon==='CLP'?'$'+fCLP(n):fUF(n)+' UF';}
 function fDate(d){if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;}
@@ -579,15 +580,22 @@ function renderProyectoDetalle(){
       <td class="ra">${fMonto(ep.neto_ret,mon)}</td>
       <td class="ra">${fMonto(ep.iva_uf,mon)}</td>
       <td class="ra"><b>${fMonto(ep.total,mon)}</b></td>
-      <td class="ra">${mon==='UF'?'$'+fCLP(ep.uf_val):'—'}</td>
+      <td class="ra">${mon==='UF'?fUFVal(ep.uf_val):'—'}</td>
       <td class="ra">$${fCLP(ep.total_clp)}</td>
-      <td>${badge(ep.estado,d)}${isPagado&&ep.fecha_pago?`<br><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink4)">${fDate(ep.fecha_pago)}</span>`:''}</td>
+      <td>
+        ${!isNula
+          ? `<button onclick="openPagoModal('${ep.id}')" title="Clic para cambiar estado de pago"
+              style="cursor:pointer;border:none;background:none;padding:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+              ${badge(ep.estado,d)}
+              ${isPagado&&ep.fecha_pago?`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink4)">${fDate(ep.fecha_pago)}</span>`:''}
+            </button>`
+          : badge(ep.estado,d)
+        }
+      </td>
       <td style="white-space:nowrap;padding:5px 8px">
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
           <div style="display:flex;gap:4px;align-items:center">
             ${!isNula?`<button class="btn xs sec" onclick="openEPModal('${ep.id}')" title="Editar EP">✏ Editar</button>`:''}
-            ${!isNula&&!isPagado?`<button class="btn xs" onclick="openPagoModal('${ep.id}')" title="Registrar pago" style="background:#fff;color:#555;border:1px solid #C0C0C0;font-weight:500" onmouseover="this.style.background='#F0F7F3';this.style.borderColor='#1A4A2A';this.style.color='#1A4A2A'" onmouseout="this.style.background='#fff';this.style.borderColor='#C0C0C0';this.style.color='#555'">○ Pagar</button>`:''}
-            ${!isNula&&isPagado?`<button class="btn xs" onclick="openPagoModal('${ep.id}')" title="Pagado el ${fDate(ep.fecha_pago)} — clic para modificar" style="background:var(--success);color:#fff;border-color:var(--success);font-weight:600;cursor:pointer" onmouseover="this.style.opacity='.85';this.title='Pagado el ${fDate(ep.fecha_pago)} — clic para modificar'" onmouseout="this.style.opacity='1'">✓ Pagado</button>`:''}
             ${!isNula?`<button class="btn xs danger" onclick="openNCModal('${ep.id}')" title="Anular con Nota de Crédito">NC</button>`:''}
           </div>
           <button class="btn xs danger" onclick="confirmarEliminarEP('${ep.id}')" title="Eliminar EP del registro" style="font-size:10px;padding:2px 8px">🗑 Eliminar EP</button>
@@ -688,7 +696,7 @@ function renderProyectoDetalle(){
             </div>
             ${mon==='UF'&&ufV2?`
             <div class="cbox" style="font-size:12px;background:var(--paper)">
-              <div class="crow"><span>UF referencial hoy</span><span>$${fCLP(ufV2)}</span></div>
+              <div class="crow"><span>UF referencial hoy</span><span>${fUFVal(ufV2)}</span></div>
               <div class="crow"><span>Contrato en $</span><span>$${fCLP(contrato*ufV2)}</span></div>
               <div class="crow"><span>Saldo por emitir en $</span><span style="color:var(--red)">$${fCLP(saldo*ufV2)}</span></div>
             </div>`:''}
@@ -780,7 +788,7 @@ function renderProyectoDetalle(){
             :'<div style="text-align:center;padding:16px;color:var(--ink4);font-size:12px">Sin órdenes de compra registradas.<br>Agrega OCs desde el tab <b>Órdenes de Compra</b>.</div>'}
             ${mon==='UF'&&ufV2&&saldoOCvsContrato>0.001?`
             <div style="margin-top:10px;padding:10px 12px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:var(--r);font-size:12px;color:var(--red)">
-              💡 <b>OC faltante referencial en $:</b> $${fCLP(saldoOCvsContrato*ufV2)} (UF a $${fCLP(ufV2)})
+              💡 <b>OC faltante referencial en $:</b> $${fCLP(saldoOCvsContrato*ufV2)} (UF a ${fUFVal(ufV2)})
             </div>`:''}
           </div>
         </div>
@@ -936,7 +944,7 @@ function openEPModal(id){
 
   // UF
   document.getElementById('ep-f-uf').value=db.uf_value||'';
-  document.getElementById('ep-uf-hint').textContent=mon==='UF'?`UF vigente: $${fCLP(db.uf_value)}`:'Moneda: Pesos CLP';
+  document.getElementById('ep-uf-hint').textContent=mon==='UF'?`UF vigente: ${fUFVal(db.uf_value)}`:'Moneda: Pesos CLP';
 
   // IVA label
   const ivaLbl='IVA 19%';
@@ -989,7 +997,7 @@ function calcEP(){
   document.getElementById('ec-netoret').textContent=fMonto(netoRet,mon);
   document.getElementById('ec-iva').textContent=fMonto(iva,mon);
   document.getElementById('ec-total').textContent=fMonto(total,mon);
-  document.getElementById('ec-clp').textContent='$'+fCLP(totalCLP)+(mon==='UF'?' (UF=$'+fCLP(ufV)+')':'');
+  document.getElementById('ec-clp').textContent='$'+fCLP(totalCLP)+(mon==='UF'?' (UF='+fUFVal(ufV)+')':'');
 
   // Live saldo indicator
   const oc_id_live=document.getElementById('ep-f-oc').value||null;
@@ -1310,7 +1318,7 @@ function renderCobros(){
         <td class="ra">${isNC?'-'+fMonto(ep.monto,mon):fMonto(ep.neto_ret,mon)}</td>
         <td class="ra">${isNC?'—':fMonto(ep.iva_uf,mon)}</td>
         <td class="ra" style="${isNC?'color:var(--red)':''}${!isNC&&ep.estado==='pagado'?';color:var(--green)':''}">${isNC?'-$'+fCLP(Math.abs(ep.total_clp)):'$'+fCLP(ep.total_clp)}</td>
-        <td class="ra">${mon==='UF'?'$'+fCLP(ep.uf_val):'—'}</td>
+        <td class="ra">${mon==='UF'?fUFVal(ep.uf_val):'—'}</td>
         <td class="mo">${isNC?'—':fDate(ep.fecha_venc)}</td>
         <td class="mo">${fDate(ep.fecha_pago)}</td>
         <td class="mo">${ep.estado==='pagado'&&dp!==null?dp+'d':'—'}</td>
@@ -1410,7 +1418,7 @@ function generarPDF(){
       <td style="text-align:right">${fMonto(ep.neto_ret,mon)}</td>
       <td style="text-align:right">${fMonto(ep.iva_uf,mon)}</td>
       <td style="text-align:right;font-weight:700">${fMonto(ep.total,mon)}</td>
-      <td style="text-align:right">${mon==='UF'?'$'+fCLP(ep.uf_val):'—'}</td>
+      <td style="text-align:right">${mon==='UF'?fUFVal(ep.uf_val):'—'}</td>
       <td style="text-align:right">$${fCLP(ep.total_clp)}</td>
     </tr>`;
     if(nc){
@@ -1441,31 +1449,31 @@ function generarPDF(){
 
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
 <style>
-body{font-family:Arial,sans-serif;font-size:10.5px;color:#111;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0;padding:0}
 .pg{padding:26px 32px}
 .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:2px solid #1B4332;padding-bottom:12px}
-.co-name{font-size:16px;font-weight:bold;color:#1A1A1A}
-.co-sub{font-size:9px;color:#666;margin-top:2px}
+.co-name{font-size:19px;font-weight:bold;color:#1A1A1A}
+.co-sub{font-size:11px;color:#666;margin-top:2px}
 .doc-box{border:2px solid #7B1A1A;padding:7px 16px;border-radius:4px;text-align:center}
-.doc-box .dt{font-size:12px;font-weight:bold;color:#7B1A1A}
-.doc-box .ds{font-size:9px;color:#555}
-.pname{font-size:14px;font-weight:bold;color:#C03030;margin:10px 0 3px}
-.pmeta{font-size:10px;color:#666;margin-bottom:12px}.pmeta table{border-collapse:collapse}.pmeta td{padding:1px 12px 1px 0;vertical-align:top}.pmeta td.lbl{color:#999;white-space:nowrap}.pmeta td.val{color:#333;font-weight:500}
+.doc-box .dt{font-size:15px;font-weight:bold;color:#7B1A1A}
+.doc-box .ds{font-size:11px;color:#555}
+.pname{font-size:17px;font-weight:bold;color:#C03030;margin:10px 0 3px}
+.pmeta{font-size:12px;color:#666;margin-bottom:12px}.pmeta table{border-collapse:collapse}.pmeta td{padding:1px 12px 1px 0;vertical-align:top}.pmeta td.lbl{color:#999;white-space:nowrap}.pmeta td.val{color:#333;font-weight:500}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
-table.info{width:100%;border-collapse:collapse;font-size:10.5px}
-table.info td{padding:3px 8px;border:1px solid #DDD}
+table.info{width:100%;border-collapse:collapse;font-size:12.5px}
+table.info td{padding:5px 8px;border:1px solid #DDD}
 table.info td:last-child{text-align:right;font-weight:500;background:#FAFAFA}
 table.info tr.h td{background:#7B1A1A;color:#fff;font-weight:bold;text-align:center}
-table.ep{width:100%;border-collapse:collapse;font-size:9.5px;margin:10px 0}
-table.ep th{background:#7B1A1A;color:#fff;padding:5px 5px;text-align:center;font-weight:500;border:1px solid #5A1212}
-table.ep td{padding:3px 5px;border:1px solid #CCC;vertical-align:middle}
+table.ep{width:100%;border-collapse:collapse;font-size:11px;margin:10px 0}
+table.ep th{background:#7B1A1A;color:#fff;padding:6px 6px;text-align:center;font-weight:500;border:1px solid #5A1212}
+table.ep td{padding:5px 6px;border:1px solid #CCC;vertical-align:middle}
 table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
 
 .saldos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .sb{border:1px solid #CCC;border-radius:3px;padding:8px 10px;background:#FAFAFA}
-.sb .sl{font-size:8.5px;color:#666;text-transform:uppercase;letter-spacing:.4px}
-.sb .sv{font-size:13px;font-weight:bold;color:#C03030;margin-top:3px}
-.foot{margin-top:18px;padding-top:8px;border-top:1px solid #EEE;font-size:9px;color:#888;display:flex;justify-content:space-between}
+.sb .sl{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.4px}
+.sb .sv{font-size:16px;font-weight:bold;color:#C03030;margin-top:3px}
+.foot{margin-top:18px;padding-top:8px;border-top:1px solid #EEE;font-size:11px;color:#888;display:flex;justify-content:space-between}
 @media print{.no-print{display:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 </style></head><body>
 <div class="pg">
@@ -1513,7 +1521,7 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
       <tr class="h"><td colspan="4">Órdenes de Compra</td></tr>
       <tr><td style="font-weight:bold">N° OC</td><td style="font-weight:bold">Monto</td><td style="font-weight:bold">Cargado</td><td style="font-weight:bold">Saldo</td></tr>
       ${ocRows}
-    </table>`:`<div style="background:#FAFAFA;border:1px solid #DDD;padding:12px;border-radius:3px;font-size:10px;color:#888">Sin órdenes de compra registradas. Los cobros se cargan contra el monto estimado del contrato.</div>`}
+    </table>`:`<div style="background:#FAFAFA;border:1px solid #DDD;padding:12px;border-radius:3px;font-size:12px;color:#888">Sin órdenes de compra registradas. Los cobros se cargan contra el monto estimado del contrato.</div>`}
   </div>
 
   <table class="ep">
@@ -1835,7 +1843,7 @@ function exportarExcel(){
       item, ep.numero||'', ep.n_factura||'', ep.fecha_emision||'', ep.glosa||'',
       parseFloat(ep.neto)||0, parseFloat(ep.ret_uf)||0,
       parseFloat(ep.neto_ret)||0, parseFloat(ep.iva_uf)||0,
-      parseFloat(ep.total)||0, parseFloat(ep.uf_val)||0,
+      parseFloat(ep.total)||0, Math.round(parseFloat(ep.uf_val||0)*100)/100,
       parseFloat(ep.total_clp)||0,
       ep.estado==='nula'?'Anulada':ep.estado==='pagado'?'Pagado':ep.estado==='parcial'?'Parcial':'Pendiente',
       ep.fecha_pago||''
@@ -1897,7 +1905,7 @@ function exportarExcel(){
     ['ÓRDENES DE COMPRA vs CONTRATO',''],
     ['Total OC emitidas',totalOC],
     ['OC faltante / exceso',saldoOCvsContrato],
-    ...(mon==='UF'&&ufV?[['OC faltante en $ (UF hoy $'+fCLP(ufV)+')',saldoOCvsContrato*ufV]]:[[],[]]),
+    ...(mon==='UF'&&ufV?[['OC faltante en $ (UF hoy '+fUFVal(ufV)+')',saldoOCvsContrato*ufV]]:[[],[]]),
     ['',''],
     ['RETENCIONES',''],
     ['Retención contrato ('+p.ret+'%)',retContrato],
