@@ -1482,7 +1482,7 @@ table.info{width:100%;border-collapse:collapse;font-size:12.5px}
 table.info td{padding:5px 8px;border:1px solid #DDD}
 table.info td:last-child{text-align:right;font-weight:500;background:#FAFAFA}
 table.info tr.h td{background:#7B1A1A;color:#fff;font-weight:bold;text-align:center}
-table.ep{width:100%;border-collapse:collapse;font-size:11px;margin:10px 0;table-layout:fixed}table.ep td,table.ep th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.ep{width:100%;border-collapse:collapse;font-size:11px;margin:10px 0;table-layout:fixed}table.ep td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}table.ep th{white-space:normal;line-height:1.3;vertical-align:bottom;padding:5px 4px}
 table.ep th{background:#7B1A1A;color:#fff;padding:6px 6px;text-align:center;font-weight:500;border:1px solid #5A1212}
 table.ep td{padding:5px 6px;border:1px solid #CCC;vertical-align:middle}
 table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
@@ -1543,9 +1543,9 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
 
   <table class="ep">
     <thead><tr>
-      <th style="width:4%">Item</th><th style="width:28%">Detalle / Glosa</th><th style="width:7%">Factura</th><th style="width:7%">Fecha</th>
-      <th style="width:9%">Monto Bruto</th><th style="width:7%">Retenciones</th>
-      <th style="width:9%">Monto Neto</th><th style="width:7%">IVA</th><th style="width:9%">Total</th><th style="width:7%">Valor UF</th><th style="width:7%">Total $</th>
+      <th style="width:3%">Item</th><th style="width:24%">Detalle / Glosa</th><th style="width:6%">Factura</th><th style="width:8%">Fecha</th>
+      <th style="width:8%">Monto<br>Bruto</th><th style="width:7%">Reten-<br>ciones</th>
+      <th style="width:8%">Monto<br>Neto</th><th style="width:7%">IVA</th><th style="width:8%">Total</th><th style="width:9%">Valor UF</th><th style="width:12%">Total $</th>
     </tr></thead>
     <tbody>
       ${epRows}
