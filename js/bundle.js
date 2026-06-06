@@ -1429,11 +1429,10 @@ function generarPDF(){
     const isAnulada=ep.estado==='nula';
     epRows+=`<tr style="${isAnulada?'color:#AAAAAA;font-style:italic':''}">
       <td style="text-align:center;font-weight:700">${epItem}</td>
-      <td>${ep.glosa||'—'}</td>
+      <td style="white-space:normal;word-break:break-word">${ep.glosa||'—'}</td>
       <td style="text-align:center">${ep.n_factura||'—'}</td>
       <td style="text-align:center">${fDate(ep.fecha_emision)}</td>
       <td style="text-align:right">${fMonto(ep.neto,mon)}</td>
-      <td style="text-align:center">—</td>
       <td style="text-align:right">${parseFloat(ep.ret_uf||0)>0?fMonto(ep.ret_uf,mon):'—'}</td>
       <td style="text-align:right">${fMonto(ep.neto_ret,mon)}</td>
       <td style="text-align:right">${fMonto(ep.iva_uf,mon)}</td>
@@ -1446,11 +1445,10 @@ function generarPDF(){
       const ncItem=item;
       epRows+=`<tr style="background:#FFFBF0;color:#8B6914">
         <td style="text-align:center;font-weight:700">${ncItem}</td>
-        <td style="font-style:italic">${nc.motivo||'Nota de Crédito — anula factura '+ep.n_factura}</td>
+        <td style="font-style:italic;white-space:normal;word-break:break-word">${nc.motivo||'Nota de Crédito — anula factura '+ep.n_factura}</td>
         <td style="text-align:center">NC ${nc.numero||'—'}</td>
         <td style="text-align:center">${fDate(nc.fecha)}</td>
         <td style="text-align:right;color:#C03030;font-weight:600">-${fMonto(nc.monto,mon)}</td>
-        <td style="text-align:center">—</td>
         <td style="text-align:center">—</td>
         <td style="text-align:right;color:#C03030;font-weight:600">-${fMonto(nc.monto,mon)}</td>
         <td style="text-align:center">—</td>
@@ -1484,7 +1482,7 @@ table.info{width:100%;border-collapse:collapse;font-size:12.5px}
 table.info td{padding:5px 8px;border:1px solid #DDD}
 table.info td:last-child{text-align:right;font-weight:500;background:#FAFAFA}
 table.info tr.h td{background:#7B1A1A;color:#fff;font-weight:bold;text-align:center}
-table.ep{width:100%;border-collapse:collapse;font-size:11px;margin:10px 0}
+table.ep{width:100%;border-collapse:collapse;font-size:11px;margin:10px 0;table-layout:fixed}table.ep td,table.ep th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 table.ep th{background:#7B1A1A;color:#fff;padding:6px 6px;text-align:center;font-weight:500;border:1px solid #5A1212}
 table.ep td{padding:5px 6px;border:1px solid #CCC;vertical-align:middle}
 table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
@@ -1533,7 +1531,6 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
       <tr class="h"><td colspan="2">Resumen Contrato</td></tr>
       <tr><td>Monto Contrato ${mon}</td><td>${fMonto(contrato,mon)}</td></tr>
       <tr><td>Monto Actualizado</td><td>${fMonto(contrato,mon)}</td></tr>
-      <tr><td>Monto Anticipo</td><td>—</td></tr>
       <tr><td>Retención (${p.ret||0}%)</td><td>${fMonto(retContrato,mon)}</td></tr>
     </table>
     ${ocs.length>0?`
@@ -1546,16 +1543,15 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
 
   <table class="ep">
     <thead><tr>
-      <th>Item</th><th>Detalle / Glosa</th><th>Factura</th><th>Fecha</th>
-      <th>Monto Bruto</th><th>Dev.Anticipo</th><th>Retenciones</th>
-      <th>Monto Neto</th><th>IVA</th><th>Total</th><th>Valor UF</th><th>Total $</th>
+      <th style="width:4%">Item</th><th style="width:28%">Detalle / Glosa</th><th style="width:7%">Factura</th><th style="width:7%">Fecha</th>
+      <th style="width:9%">Monto Bruto</th><th style="width:7%">Retenciones</th>
+      <th style="width:9%">Monto Neto</th><th style="width:7%">IVA</th><th style="width:9%">Total</th><th style="width:7%">Valor UF</th><th style="width:7%">Total $</th>
     </tr></thead>
     <tbody>
       ${epRows}
       <tr class="tot">
-        <td colspan="3"></td><td style="text-align:right">Totales</td>
+        <td colspan="2"></td><td style="text-align:right">Totales</td>
         <td style="text-align:right">${fMonto(epsValidos.reduce((s,e)=>s+(parseFloat(e.neto)||0),0),mon)}</td>
-        <td></td>
         <td style="text-align:right">${fMonto(totalRet,mon)}</td>
         <td style="text-align:right">${fMonto(totalNetoRet,mon)}</td>
         <td style="text-align:right">${fMonto(epsValidos.reduce((s,e)=>s+(parseFloat(e.iva_uf)||0),0),mon)}</td>
@@ -1569,7 +1565,6 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
 
   <div class="saldos">
     <div class="sb"><div class="sl">Por Pagar Contrato</div><div class="sv">${fMonto(saldo,mon)}</div></div>
-    <div class="sb"><div class="sl">Por Devolver Anticipo</div><div class="sv">${fMonto(0,mon)}</div></div>
     <div class="sb"><div class="sl">Por Retener</div><div class="sv">${fMonto(totalRet,mon)}</div></div>
   </div>
 
