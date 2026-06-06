@@ -596,7 +596,6 @@ function renderProyectoDetalle(){
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
           <div style="display:flex;gap:4px;align-items:center">
             ${!isNula?`<button class="btn xs sec" onclick="openEPModal('${ep.id}')" title="Editar EP">✏ Editar</button>`:''}
-            ${!isNula?`<button class="btn xs danger" onclick="openNCModal('${ep.id}')" title="Anular con Nota de Crédito">NC</button>`:''}
           </div>
           <button class="btn xs danger" onclick="confirmarEliminarEP('${ep.id}')" title="Eliminar EP del registro" style="font-size:10px;padding:2px 8px">🗑 Eliminar EP</button>
           ${isNula?`<button class="btn xs danger" onclick="eliminarEP('${ep.id}')" title="Eliminar factura anulada del registro" style="font-size:10px;padding:2px 8px">🗑 Eliminar registro</button>`:''}
@@ -1717,10 +1716,10 @@ function confirmarEliminarEP(id){
   // Show sin-NC panel by default
   document.getElementById('elim-panel-nc').style.display='none';
   document.getElementById('elim-radio-sin').checked=true;
-  document.getElementById('ov-elim-ep').classList.add('open');
+  const el=document.getElementById('ov-elim-ep');el.style.display='flex';
 }
 function closeElimEPModal(){
-  document.getElementById('ov-elim-ep').classList.remove('open');
+  document.getElementById('ov-elim-ep').style.display='none';
   window._elimEPId=null;
 }
 function onElimRadioChange(){
