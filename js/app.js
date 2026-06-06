@@ -516,9 +516,8 @@ function renderProyectoDetalle(){
   const eps=db.eps.filter(e=>e.proy_id===currentProyId);
   const epsValidos=eps.filter(e=>e.estado!=='nula');
   const contrato=parseFloat(p.monto)||0;
-  // If client rebaja IVA → use neto_ret; if no-rebaja → use total (includes IVA)
-  const cl_rebaja=(cl.iva!=='no-rebaja');
-  const valorCobro=(ep)=>cl_rebaja?(parseFloat(ep.neto_ret)||0):(parseFloat(ep.total)||0);
+  // Cobrado/Por cobrar siempre en netos
+  const valorCobro=(ep)=>(parseFloat(ep.neto_ret)||0);
   const emitido=epsValidos.reduce((s,e)=>s+valorCobro(e),0);
   const cobrado=epsValidos.filter(e=>e.estado==='pagado').reduce((s,e)=>s+valorCobro(e),0);
   const porCobrar=epsValidos.filter(e=>e.estado!=='pagado').reduce((s,e)=>s+valorCobro(e),0);
@@ -547,11 +546,11 @@ function renderProyectoDetalle(){
         </div>
       </div>
       <div class="pb-stats">
-        <div class="pbs"><div class="pbsl">Contrato${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv">${fMonto(contrato,mon)}</div></div>
-        <div class="pbs"><div class="pbsl">Emitido${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv">${fMonto(emitido,mon)}</div></div>
-        <div class="pbs"><div class="pbsl">Cobrado${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv" style="color:#E8A0A0">${fMonto(cobrado,mon)}</div></div>
-        <div class="pbs"><div class="pbsl">Por Cobrar${cl_rebaja?' (neto)':' (c/IVA)'}</div><div class="pbsv" style="color:#FFB347">${fMonto(porCobrar,mon)}<br><span style="font-size:10px;opacity:.75">${cl_rebaja?'(+ IVA al facturar)':''}</span></div></div>
-        <div class="pbs"><div class="pbsl">Saldo Contrato${cl_rebaja?' (neto)':''}</div><div class="pbsv" style="color:#FFD700">${fMonto(saldo,mon)}<br><span style="font-size:10px;opacity:.75">${cl_rebaja&&saldo>0?'(+ IVA al facturar)':''}</span></div></div>
+        <div class="pbs"><div class="pbsl">Contrato (neto)</div><div class="pbsv">${fMonto(contrato,mon)}</div></div>
+        <div class="pbs"><div class="pbsl">Emitido (neto)</div><div class="pbsv">${fMonto(emitido,mon)}</div></div>
+        <div class="pbs"><div class="pbsl">Cobrado (neto)</div><div class="pbsv" style="color:#E8A0A0">${fMonto(cobrado,mon)}</div></div>
+        <div class="pbs"><div class="pbsl">Por Cobrar (neto)</div><div class="pbsv" style="color:#FFB347">${fMonto(porCobrar,mon)}<br><span style="font-size:10px;opacity:.75">(+ IVA al facturar)</span></div></div>
+        <div class="pbs"><div class="pbsl">Saldo Contrato (neto)</div><div class="pbsv" style="color:#FFD700">${fMonto(saldo,mon)}<br><span style="font-size:10px;opacity:.75">${saldo>0?'(+ IVA al facturar)':''}</span></div></div>
       </div>
     </div>`;
 
@@ -625,7 +624,7 @@ function renderProyectoDetalle(){
   const totalIVA=eps.filter(e=>e.estado!=='nula').reduce((s,e)=>s+(parseFloat(e.iva_uf)||0),0);
   const totalTotal=eps.filter(e=>e.estado!=='nula').reduce((s,e)=>s+(parseFloat(e.total)||0),0);
   const totalCLP=eps.filter(e=>e.estado!=='nula').reduce((s,e)=>s+(parseFloat(e.total_clp)||0),0);
-  // "Pagado a la fecha": neto_ret if client rebaja IVA, total if not
+  // Cobrado: siempre en netos
   const pagadoNetoRet=eps.filter(e=>e.estado==='pagado').reduce((s,e)=>s+valorCobro(e),0);
 
   document.getElementById('pd-tab-eps').innerHTML=`
@@ -680,8 +679,8 @@ function renderProyectoDetalle(){
               <div class="crow"><span>Monto Contrato</span><span style="font-weight:600">${fMonto(contrato,mon)}</span></div>
               <div class="crow"><span>Monto Emitido (neto c/ret.)</span><span>${fMonto(totalNetoRet,mon)}</span></div>
               <div class="crow"><span>Retención acumulada</span><span style="color:var(--amber)">${fMonto(totalRet,mon)}</span></div>
-              <div class="crow" style="color:var(--success)"><span>Cobrado${cl_rebaja?' (neto)':' (c/IVA)'}</span><span>${fMonto(cobrado,mon)}</span></div>
-              <div class="crow" style="color:var(--amber)"><span>Por Cobrar${cl_rebaja?' (neto)':' (c/IVA)'}${cl_rebaja?' (+ IVA al facturar)':''}</span><span>${fMonto(porCobrar,mon)}</span></div>
+              <div class="crow" style="color:var(--success)"><span>Cobrado (neto)</span><span>${fMonto(cobrado,mon)}</span></div>
+              <div class="crow" style="color:var(--amber)"><span>Por Cobrar (neto · + IVA al facturar)</span><span>${fMonto(porCobrar,mon)}</span></div>
               <div class="crow" style="color:var(--red);font-size:13.5px"><span>Saldo Por Emitir</span><span>${fMonto(saldo,mon)}</span></div>
             </div>
             ${mon==='UF'&&ufV2?`
@@ -975,7 +974,6 @@ function calcEP(){
   const neto=parseFloat(document.getElementById('ep-f-neto').value)||0;
   const retPct=parseFloat(document.getElementById('ep-f-ret').value)||0;
   const ufV=parseFloat(document.getElementById('ep-f-uf').value)||db.uf_value||0;
-  const rebaja=cl.iva!=='no-rebaja';
   const ret=neto*retPct/100;
   const netoRet=neto-ret;
   const iva=netoRet*0.19;  // siempre se calcula
@@ -986,7 +984,7 @@ function calcEP(){
   document.getElementById('ec-neto').textContent=fMonto(neto,mon);
   document.getElementById('ec-ret').textContent=retPct>0?'-'+fMonto(ret,mon):'Sin retención';
   document.getElementById('ec-netoret').textContent=fMonto(netoRet,mon);
-  document.getElementById('ec-iva').textContent=fMonto(iva,mon)+(rebaja?' (mandante rebaja)':'');
+  document.getElementById('ec-iva').textContent=fMonto(iva,mon);
   document.getElementById('ec-total').textContent=fMonto(total,mon);
   document.getElementById('ec-clp').textContent='$'+fCLP(totalCLP)+(mon==='UF'?' (UF=$'+fCLP(ufV)+')':'');
 
@@ -1056,7 +1054,6 @@ function guardarEP(){
   if(!neto){alert('El monto neto es obligatorio.');return;}
   const retPct=parseFloat(document.getElementById('ep-f-ret').value)||0;
   const ufV=parseFloat(document.getElementById('ep-f-uf').value)||db.uf_value||0;
-  const rebaja=cl.iva!=='no-rebaja';
   const ret_uf=neto*retPct/100;
   const neto_ret=neto-ret_uf;
   const iva_uf=neto_ret*0.19;  // siempre se calcula, aunque mandante rebaje IVA
@@ -1386,9 +1383,8 @@ function generarPDF(){
   const contrato=parseFloat(p.monto)||0;
   const totalNetoRet=epsValidos.reduce((s,e)=>s+(parseFloat(e.neto_ret)||0),0);
   const totalRet=epsValidos.reduce((s,e)=>s+(parseFloat(e.ret_uf)||0),0);
-  // PDF: same logic — neto if rebaja IVA, total if not
-  const pdfRebajaIVA=(cl.iva!=='no-rebaja');
-  const pdfValorCobro=(ep)=>pdfRebajaIVA?(parseFloat(ep.neto_ret)||0):(parseFloat(ep.total)||0);
+  // PDF: cobrado en netos
+  const pdfValorCobro=(ep)=>(parseFloat(ep.neto_ret)||0);
   const pagadoNetoRet=epsValidos.filter(e=>e.estado==='pagado').reduce((s,e)=>s+pdfValorCobro(e),0);
   const saldo=Math.max(0,contrato-totalNetoRet);
   const retContrato=contrato*(parseFloat(p.ret)||0)/100;
@@ -1496,7 +1492,7 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
       </tr>
       <tr>
         <td class="lbl">Ret. Contrato:</td><td class="val">${p.ret||0}%</td>
-        <td class="lbl" style="padding-left:20px">IVA:</td><td class="val">${pdfRebajaIVA?'Mandante rebaja IVA':'Mandante no rebaja IVA'}</td>
+        <td class="lbl" style="padding-left:20px">IVA:</td><td class="val">19%</td>
       </tr>
     </tbody></table>
   </div>
@@ -1796,8 +1792,7 @@ function exportarExcel(){
   const ncs=db.ncs.filter(n=>eps.some(e=>e.id===n.ep_id));
   const ocs=p.ocs||[];
   const ufV=db.uf_value||0;
-  const cl_rebaja=cl.iva!=='no-rebaja';
-  const valorCobro=(ep)=>cl_rebaja?(parseFloat(ep.neto_ret)||0):(parseFloat(ep.total)||0);
+  const valorCobro=(ep)=>(parseFloat(ep.neto_ret)||0);
 
   const WB=XLSX.utils.book_new();
 
@@ -1843,8 +1838,8 @@ function exportarExcel(){
   const porCobrar=epsValidos.filter(e=>e.estado!=='pagado').reduce((s,e)=>s+valorCobro(e),0);
 
   epRows.push(['','','','','TOTALES',totalNeto,totalRet,totalNetoRet,totalIVA,totalTotal,'',totalCLP,'','']);
-  epRows.push(['','','','',`Cobrado${cl_rebaja?' (neto)':' (c/IVA)'}`,cobrado,'','','','','','','','']);
-  epRows.push(['','','','',`Por Cobrar${cl_rebaja?' (neto)':' (c/IVA)'}`,porCobrar,'','','','','','','','']);
+  epRows.push(['','','','','Cobrado (neto)',cobrado,'','','','','','','','']);
+  epRows.push(['','','','','Por Cobrar (neto + IVA al facturar)',porCobrar,'','','','','','','','']);
 
   const wsEP=XLSX.utils.aoa_to_sheet([epHeaders,...epRows]);
 
@@ -1864,14 +1859,14 @@ function exportarExcel(){
     ['CONTROL DE SALDOS — '+p.nombre,''],
     ['Mandante',cl.nombre||'—'],
     ['Moneda',mon],
-    ['IVA',cl_rebaja?'Mandante rebaja IVA':'Mandante no rebaja IVA'],
+    ['IVA','19%'],
     ['',''],
     ['RESUMEN CONTRATO',''],
     ['Monto Contrato Estimado',contrato],
     ['Total Emitido (neto c/ret.)',totalNetoRet],
     ['Retención Acumulada',totalRet],
-    [`Cobrado${cl_rebaja?' (neto)':' (c/IVA)'}`,cobrado],
-    [`Por Cobrar${cl_rebaja?' (neto)':' (c/IVA)'}`,porCobrar],
+    ['Cobrado (neto)',cobrado],
+    ['Por Cobrar (neto)',porCobrar],
     ['Saldo Por Emitir',saldoContrato],
     ['',''],
     ['ÓRDENES DE COMPRA vs CONTRATO',''],
