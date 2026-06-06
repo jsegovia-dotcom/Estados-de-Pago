@@ -583,13 +583,15 @@ function renderProyectoDetalle(){
       <td class="ra">$${fCLP(ep.total_clp)}</td>
       <td>${badge(ep.estado,d)}${isPagado&&ep.fecha_pago?`<br><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink4)">${fDate(ep.fecha_pago)}</span>`:''}</td>
       <td style="white-space:nowrap;padding:5px 8px">
-        <div style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap">
-          ${!isNula?`<button class="btn xs sec" onclick="openEPModal('${ep.id}')" title="Editar EP">✏ Editar</button>`:''}
-          ${!isNula&&!isPagado?`<button class="btn xs" onclick="openPagoModal('${ep.id}')" title="Registrar pago" style="background:#fff;color:#555;border:1px solid #C0C0C0;font-weight:500" onmouseover="this.style.background='#F0F7F3';this.style.borderColor='#1A4A2A';this.style.color='#1A4A2A'" onmouseout="this.style.background='#fff';this.style.borderColor='#C0C0C0';this.style.color='#555'">○ Pagar</button>`:''}
-          ${!isNula&&isPagado?`<button class="btn xs" onclick="openPagoModal('${ep.id}')" title="Pagado el ${fDate(ep.fecha_pago)} — clic para modificar" style="background:var(--success);color:#fff;border-color:var(--success);font-weight:600;cursor:pointer" onmouseover="this.style.opacity='.85';this.title='Pagado el ${fDate(ep.fecha_pago)} — clic para modificar'" onmouseout="this.style.opacity='1'">✓ Pagado</button>`:''}
-          ${!isNula?`<button class="btn xs danger" onclick="openNCModal('${ep.id}')" title="Anular con Nota de Crédito">NC</button>`:''}
-          <button class="btn xs danger" onclick="confirmarEliminarEP('${ep.id}')" title="Eliminar EP del registro">🗑</button>
-          ${isNula?`<button class="btn xs danger" onclick="eliminarEP('${ep.id}')" title="Eliminar factura anulada del registro">Eliminar</button>`:''}
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+          <div style="display:flex;gap:4px;align-items:center">
+            ${!isNula?`<button class="btn xs sec" onclick="openEPModal('${ep.id}')" title="Editar EP">✏ Editar</button>`:''}
+            ${!isNula&&!isPagado?`<button class="btn xs" onclick="openPagoModal('${ep.id}')" title="Registrar pago" style="background:#fff;color:#555;border:1px solid #C0C0C0;font-weight:500" onmouseover="this.style.background='#F0F7F3';this.style.borderColor='#1A4A2A';this.style.color='#1A4A2A'" onmouseout="this.style.background='#fff';this.style.borderColor='#C0C0C0';this.style.color='#555'">○ Pagar</button>`:''}
+            ${!isNula&&isPagado?`<button class="btn xs" onclick="openPagoModal('${ep.id}')" title="Pagado el ${fDate(ep.fecha_pago)} — clic para modificar" style="background:var(--success);color:#fff;border-color:var(--success);font-weight:600;cursor:pointer" onmouseover="this.style.opacity='.85';this.title='Pagado el ${fDate(ep.fecha_pago)} — clic para modificar'" onmouseout="this.style.opacity='1'">✓ Pagado</button>`:''}
+            ${!isNula?`<button class="btn xs danger" onclick="openNCModal('${ep.id}')" title="Anular con Nota de Crédito">NC</button>`:''}
+          </div>
+          <button class="btn xs danger" onclick="confirmarEliminarEP('${ep.id}')" title="Eliminar EP del registro" style="font-size:10px;padding:2px 8px">🗑 Eliminar EP</button>
+          ${isNula?`<button class="btn xs danger" onclick="eliminarEP('${ep.id}')" title="Eliminar factura anulada del registro" style="font-size:10px;padding:2px 8px">🗑 Eliminar registro</button>`:''}
         </div>
       </td>
     </tr>`;
