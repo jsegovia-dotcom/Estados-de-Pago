@@ -610,12 +610,10 @@ function renderProyectoDetalle(){
         }
       </td>
       <td style="white-space:nowrap;padding:5px 8px">
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
-          <div style="display:flex;gap:4px;align-items:center">
-            ${!isNula?`<button class="btn xs sec" onclick="openEPModal('${ep.id}')" title="Editar EP">✏ Editar</button>`:''}
-          </div>
-          <button class="btn xs danger" onclick="confirmarEliminarEP('${ep.id}')" title="Eliminar EP del registro" style="font-size:10px;padding:2px 8px">🗑 Eliminar EP</button>
-          ${isNula?`<button class="btn xs danger" onclick="eliminarEP('${ep.id}')" title="Eliminar factura anulada del registro" style="font-size:10px;padding:2px 8px">🗑 Eliminar registro</button>`:''}
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap">
+          ${!isNula?`<button class="btn xs sec" onclick="openEPModal('${ep.id}')" title="Editar EP">✏ Editar</button>`:''}
+          <button class="btn xs danger" onclick="confirmarEliminarEP('${ep.id}')" title="Eliminar EP del registro">🗑 Eliminar EP</button>
+          ${isNula?`<button class="btn xs danger" onclick="eliminarEP('${ep.id}')" title="Eliminar factura anulada">🗑 Eliminar</button>`:''}
         </div>
       </td>
     </tr>`;
