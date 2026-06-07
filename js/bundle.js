@@ -1550,7 +1550,8 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
     <tbody>
       ${epRows}
       <tr class="tot">
-        <td colspan="2"></td><td style="text-align:right">Totales</td>
+        <td colspan="3"></td>
+        <td style="text-align:right;font-weight:700">Totales</td>
         <td style="text-align:right">${fMonto(epsValidos.reduce((s,e)=>s+(parseFloat(e.neto)||0),0),mon)}</td>
         <td style="text-align:right">${fMonto(totalRet,mon)}</td>
         <td style="text-align:right">${fMonto(totalNetoRet,mon)}</td>
