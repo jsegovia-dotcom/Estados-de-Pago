@@ -365,7 +365,10 @@ function renderProyectos(){
         <td class="mo">${fMonto(emitido,p.moneda)}</td>
         <td style="min-width:100px"><span style="font-size:11px;color:var(--ink3)">${pct.toFixed(0)}%</span><div class="prog-wrap"><div class="prog-fill" style="width:${pct.toFixed(1)}%"></div></div></td>
         <td>${pendientes>0?`<span class="badge b-pend"><span class="dot"></span>${pendientes} pend.</span>`:'<span class="badge b-pago" style="gap:0">Al día</span>'}</td>
-        <td><button class="btn xs sec" onclick="event.stopPropagation();abrirProyecto('${p.id}')">Ver →</button></td>
+        <td style="white-space:nowrap">
+          <button class="btn xs sec" onclick="event.stopPropagation();abrirProyecto('${p.id}')">Ver →</button>
+          <button class="btn xs danger" onclick="event.stopPropagation();iniciarEliminarProyecto('${p.id}')" title="Eliminar proyecto" style="margin-left:4px">🗑</button>
+        </td>
       </tr>`;
     }).join('')}</tbody></table>`;
 }
@@ -1617,7 +1620,8 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
   <p class="hint">
     <span class="step">1</span> Clic en <b>Imprimir / Guardar PDF</b> &nbsp;·&nbsp;
     <span class="step">2</span> En <b>Destino</b> selecciona <b>"Guardar como PDF"</b> &nbsp;·&nbsp;
-    <span class="step">3</span> Clic en <b>Guardar</b>
+    <span class="step">3</span> En <b>Más opciones</b> desmarca <b>"Encabezados y pies de página"</b> &nbsp;·&nbsp;
+    <span class="step">4</span> Clic en <b>Guardar</b>
   </p>
   <div class="btns">
     <button class="btn-close" onclick="window.close()">✕ Cerrar</button>
@@ -1854,6 +1858,55 @@ function renderReportesIfActive(){
   const rp=document.getElementById('p-reportes');
   if(rp&&rp.classList.contains('active'))renderReportes();
 }
+function iniciarEliminarProyecto(id){
+  const p=db.proyectos.find(x=>x.id===id);
+  if(!p)return;
+  const eps=db.eps.filter(e=>e.proy_id===id);
+  const ncs=db.ncs.filter(n=>n.proy_id===id);
+  const epsValidos=eps.filter(e=>e.estado!=='nula');
+
+  // If there are valid EPs, block deletion
+  if(epsValidos.length>0){
+    openConfirm(
+      '⚠ No se puede eliminar',
+      `El proyecto "${p.nombre}" tiene ${epsValidos.length} Estado${epsValidos.length>1?'s':''} de Pago cursado${epsValidos.length>1?'s':''}. Debes eliminar todos los EPs desde la vista del proyecto antes de poder eliminarlo.`,
+      null
+    );
+    // Hide confirm button — just show OK
+    const btn=document.getElementById('cf-btn');
+    if(btn){btn.textContent='Entendido';btn.onclick=closeConfirm;}
+    return;
+  }
+
+  // First confirmation
+  openConfirm(
+    '🗑 Eliminar Proyecto',
+    `¿Eliminar el proyecto "${p.nombre}"?${eps.length>0?' Se eliminarán también '+eps.length+' registro'+( eps.length>1?'s':'')+' anulado'+( eps.length>1?'s':'')+' y sus NCs.':''}
+
+Esta acción no se puede deshacer.`,
+    ()=>{
+      closeConfirm();
+      // Second confirmation
+      openConfirm(
+        '⚠ Confirmar eliminación definitiva',
+        `¿Estás seguro? El proyecto "${p.nombre}" y todos sus datos serán eliminados permanentemente.`,
+        ()=>{
+          closeConfirm();
+          db.proyectos=db.proyectos.filter(x=>x.id!==id);
+          db.eps=db.eps.filter(e=>e.proy_id!==id);
+          db.ncs=db.ncs.filter(n=>n.proy_id!==id);
+          save();
+          renderProyectos();
+          renderCobrosStats();
+          renderCobros();
+          renderReportesIfActive();
+          mostrarToast(`Proyecto "${p.nombre}" eliminado`,'ok');
+        }
+      );
+    }
+  );
+}
+
 function renderProyectosIfActive(){
   const pp=document.getElementById('p-proyectos');
   if(pp&&pp.classList.contains('active'))renderProyectos();
