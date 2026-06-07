@@ -1492,7 +1492,7 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
 .sb .sl{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.4px}
 .sb .sv{font-size:16px;font-weight:bold;color:#C03030;margin-top:3px}
 .foot{margin-top:18px;padding-top:8px;border-top:1px solid #EEE;font-size:11px;color:#888;display:flex;justify-content:space-between}
-@media print{.no-print{display:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+@media print{.no-print{display:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}@page{margin:10mm 12mm;size:A4 landscape}
 </style></head><body>
 <div class="pg">
   <div class="top">
@@ -1610,6 +1610,7 @@ table.ep tr.tot td{background:#F5EAEA;font-weight:bold}
 @media print {
   .print-bar {display:none!important}
   body {margin:0;padding:0}
+  @page {margin:10mm 12mm;size:A4 landscape}
 }
 </style>
 <div class="print-bar">
