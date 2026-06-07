@@ -1865,27 +1865,88 @@ function iniciarEliminarProyecto(id){
   const epsValidos=eps.filter(e=>e.estado!=='nula');
 
   if(epsValidos.length>0){
-    alert(`⚠ No se puede eliminar\n\nEl proyecto "${p.nombre}" tiene ${epsValidos.length} Estado${epsValidos.length>1?'s':''} de Pago cursado${epsValidos.length>1?'s':''}. Elimina todos los EPs desde la vista del proyecto primero.`);
+    // Blocked — show info modal
+    abrirModalElimProy({
+      titulo:'⚠ No se puede eliminar',
+      cuerpo:`El proyecto <b>${p.nombre}</b> tiene <b>${epsValidos.length} Estado${epsValidos.length>1?'s':''} de Pago cursado${epsValidos.length>1?'s':''}</b>.<br><br>Debes eliminar todos los EPs desde la vista del proyecto antes de poder eliminarlo.`,
+      paso:0
+    });
     return;
   }
 
   // First confirmation
-  const ok1=confirm(`¿Eliminar el proyecto "${p.nombre}"?${eps.length>0?'\n\nSe eliminarán también '+eps.length+' registro'+( eps.length>1?'s':'')+' anulado'+(eps.length>1?'s':'')+' y sus NCs.':''}\n\nEsta acción no se puede deshacer.`);
-  if(!ok1)return;
+  abrirModalElimProy({
+    titulo:'🗑 Eliminar Proyecto',
+    cuerpo:`¿Eliminar el proyecto <b>${p.nombre}</b>?${eps.length>0?`<br><br>Se eliminarán también <b>${eps.length} registro${eps.length>1?'s':''} anulado${eps.length>1?'s':''}</b> y sus Notas de Crédito.`:''}<br><br><span style="color:#888;font-size:12px">Esta acción no se puede deshacer.</span>`,
+    paso:1,
+    id
+  });
+}
 
-  // Second confirmation
-  const ok2=confirm(`⚠ CONFIRMACIÓN FINAL\n\n¿Estás completamente seguro?\n\nEl proyecto "${p.nombre}" y todos sus datos serán eliminados de forma permanente.`);
-  if(!ok2)return;
+function abrirModalElimProy({titulo,cuerpo,paso,id}){
+  let m=document.getElementById('modal-elim-proy');
+  if(!m){
+    m=document.createElement('div');
+    m.id='modal-elim-proy';
+    m.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center';
+    m.innerHTML=`
+      <div style="background:#fff;border-radius:10px;width:100%;max-width:440px;margin:20px;box-shadow:0 8px 32px rgba(0,0,0,.18);font-family:'IBM Plex Sans',Arial,sans-serif;overflow:hidden">
+        <div id="mep-head" style="background:#7B1A1A;color:#fff;padding:14px 20px;font-size:15px;font-weight:600"></div>
+        <div id="mep-body" style="padding:20px 24px;font-size:13.5px;color:#333;line-height:1.6"></div>
+        <div id="mep-foot" style="padding:14px 20px;border-top:1px solid #EEE;display:flex;justify-content:flex-end;gap:10px;background:#FAFAFA"></div>
+      </div>`;
+    document.body.appendChild(m);
+  }
+  document.getElementById('mep-head').textContent=titulo;
+  document.getElementById('mep-body').innerHTML=cuerpo;
+  const foot=document.getElementById('mep-foot');
+  foot.innerHTML='';
 
-  db.proyectos=db.proyectos.filter(x=>x.id!==id);
-  db.eps=db.eps.filter(e=>e.proy_id!==id);
-  db.ncs=db.ncs.filter(n=>n.proy_id!==id);
-  save();
-  renderProyectos();
-  renderCobrosStats();
-  renderCobros();
-  renderReportesIfActive();
-  mostrarToast(`Proyecto "${p.nombre}" eliminado`,'ok');
+  const btnCerrar=document.createElement('button');
+  btnCerrar.textContent=paso===0?'Entendido':'Cancelar';
+  btnCerrar.style.cssText='padding:9px 20px;border:1.5px solid #CCC;border-radius:6px;background:#fff;font-size:13px;font-family:inherit;cursor:pointer;color:#444;font-weight:500';
+  btnCerrar.onclick=()=>{m.style.display='none';};
+  foot.appendChild(btnCerrar);
+
+  if(paso===1){
+    const btnConf=document.createElement('button');
+    btnConf.textContent='Sí, eliminar';
+    btnConf.style.cssText='padding:9px 20px;border:none;border-radius:6px;background:#7B1A1A;color:#fff;font-size:13px;font-family:inherit;cursor:pointer;font-weight:700';
+    btnConf.onclick=()=>{
+      m.style.display='none';
+      // Second confirmation
+      abrirModalElimProy({
+        titulo:'⚠ Confirmación final',
+        cuerpo:`¿Estás completamente seguro?<br><br>El proyecto y todos sus datos serán <b>eliminados de forma permanente</b>.`,
+        paso:2,
+        id
+      });
+    };
+    foot.appendChild(btnConf);
+  }
+
+  if(paso===2){
+    const btnConf=document.createElement('button');
+    btnConf.textContent='Eliminar definitivamente';
+    btnConf.style.cssText='padding:9px 20px;border:none;border-radius:6px;background:#7B1A1A;color:#fff;font-size:13px;font-family:inherit;cursor:pointer;font-weight:700';
+    btnConf.onclick=()=>{
+      m.style.display='none';
+      const p=db.proyectos.find(x=>x.id===id);
+      const nombre=p?p.nombre:'';
+      db.proyectos=db.proyectos.filter(x=>x.id!==id);
+      db.eps=db.eps.filter(e=>e.proy_id!==id);
+      db.ncs=db.ncs.filter(n=>n.proy_id!==id);
+      save();
+      renderProyectos();
+      renderCobrosStats();
+      renderCobros();
+      renderReportesIfActive();
+      mostrarToast(`Proyecto "${nombre}" eliminado`,'ok');
+    };
+    foot.appendChild(btnConf);
+  }
+
+  m.style.display='flex';
 }
 
 function renderProyectosIfActive(){
