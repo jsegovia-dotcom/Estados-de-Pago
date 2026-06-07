@@ -2115,6 +2115,7 @@ function showAlertaSaldo(title, bodyHtml){
 //  INIT
 // ════════════════════════════════
 async function init(){
+  await loadData();
   await fetchUF();
   renderProyectos();
 }
