@@ -105,6 +105,13 @@ async function conectarArchivo(){
     alert('Tu navegador no soporta File System Access API.\nUsa Chrome o Edge para esta función.');
     return;
   }
+  // Si ya hay un handle guardado, reconectar en vez de crear archivo nuevo
+  const hExistente=await _loadHandle();
+  if(hExistente){
+    window._pendingHandle=hExistente;
+    await reconectarArchivo();
+    return;
+  }
   try{
     const h=await window.showSaveFilePicker({
       suggestedName:'jasv-cobros-datos.json',
@@ -164,7 +171,14 @@ async function loadData(){
         return;
       }
       // Permiso no concedido automáticamente — mostrar banner para pedirlo
+      window._pendingHandle=h;
       _mostrarBannerPermiso(h);
+      // Cargar datos desde localStorage mientras tanto
+      try{
+        const raw=localStorage.getItem(DKEY);
+        if(raw) db=Object.assign({},JSON.parse(JSON.stringify(EMPTY_DB)),JSON.parse(raw));
+      }catch(e){}
+      return;
     }catch(e){}
   }
   // Fallback: localStorage
@@ -180,7 +194,7 @@ function _mostrarBannerPermiso(h){
   const bar=document.getElementById('file-status-bar');
   if(!bar)return;
   bar.style.background='#5A3000';
-  bar.innerHTML='🟡 <b>Archivo guardado</b> — clic en <button onclick="reconectarArchivo()" style="background:#7B1A1A;color:#fff;border:none;padding:2px 10px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:700">Reconectar</button> para usar tus datos del Mac';
+  bar.innerHTML='🟡 <b>Archivo guardado detectado</b> — clic en <button onclick="reconectarArchivo()" style="background:#7B1A1A;color:#fff;border:none;padding:2px 10px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:700">🔗 Reconectar</button> para cargar tus datos (un solo clic, sin buscar el archivo)';
   window._pendingHandle=h;
 }
 
