@@ -1862,49 +1862,30 @@ function iniciarEliminarProyecto(id){
   const p=db.proyectos.find(x=>x.id===id);
   if(!p)return;
   const eps=db.eps.filter(e=>e.proy_id===id);
-  const ncs=db.ncs.filter(n=>n.proy_id===id);
   const epsValidos=eps.filter(e=>e.estado!=='nula');
 
-  // If there are valid EPs, block deletion
   if(epsValidos.length>0){
-    openConfirm(
-      '⚠ No se puede eliminar',
-      `El proyecto "${p.nombre}" tiene ${epsValidos.length} Estado${epsValidos.length>1?'s':''} de Pago cursado${epsValidos.length>1?'s':''}. Debes eliminar todos los EPs desde la vista del proyecto antes de poder eliminarlo.`,
-      null
-    );
-    // Hide confirm button — just show OK
-    const btn=document.getElementById('cf-btn');
-    if(btn){btn.textContent='Entendido';btn.onclick=closeConfirm;}
+    alert(`⚠ No se puede eliminar\n\nEl proyecto "${p.nombre}" tiene ${epsValidos.length} Estado${epsValidos.length>1?'s':''} de Pago cursado${epsValidos.length>1?'s':''}. Elimina todos los EPs desde la vista del proyecto primero.`);
     return;
   }
 
   // First confirmation
-  openConfirm(
-    '🗑 Eliminar Proyecto',
-    `¿Eliminar el proyecto "${p.nombre}"?${eps.length>0?' Se eliminarán también '+eps.length+' registro'+( eps.length>1?'s':'')+' anulado'+( eps.length>1?'s':'')+' y sus NCs.':''}
+  const ok1=confirm(`¿Eliminar el proyecto "${p.nombre}"?${eps.length>0?'\n\nSe eliminarán también '+eps.length+' registro'+( eps.length>1?'s':'')+' anulado'+(eps.length>1?'s':'')+' y sus NCs.':''}\n\nEsta acción no se puede deshacer.`);
+  if(!ok1)return;
 
-Esta acción no se puede deshacer.`,
-    ()=>{
-      closeConfirm();
-      // Second confirmation
-      openConfirm(
-        '⚠ Confirmar eliminación definitiva',
-        `¿Estás seguro? El proyecto "${p.nombre}" y todos sus datos serán eliminados permanentemente.`,
-        ()=>{
-          closeConfirm();
-          db.proyectos=db.proyectos.filter(x=>x.id!==id);
-          db.eps=db.eps.filter(e=>e.proy_id!==id);
-          db.ncs=db.ncs.filter(n=>n.proy_id!==id);
-          save();
-          renderProyectos();
-          renderCobrosStats();
-          renderCobros();
-          renderReportesIfActive();
-          mostrarToast(`Proyecto "${p.nombre}" eliminado`,'ok');
-        }
-      );
-    }
-  );
+  // Second confirmation
+  const ok2=confirm(`⚠ CONFIRMACIÓN FINAL\n\n¿Estás completamente seguro?\n\nEl proyecto "${p.nombre}" y todos sus datos serán eliminados de forma permanente.`);
+  if(!ok2)return;
+
+  db.proyectos=db.proyectos.filter(x=>x.id!==id);
+  db.eps=db.eps.filter(e=>e.proy_id!==id);
+  db.ncs=db.ncs.filter(n=>n.proy_id!==id);
+  save();
+  renderProyectos();
+  renderCobrosStats();
+  renderCobros();
+  renderReportesIfActive();
+  mostrarToast(`Proyecto "${p.nombre}" eliminado`,'ok');
 }
 
 function renderProyectosIfActive(){
