@@ -1482,7 +1482,10 @@ function generarPDF(){
     return`<tr><td>${oc.num}</td><td style="text-align:right">${fMonto(oc.monto,mon)}</td><td style="text-align:right">${fMonto(cargado,mon)}</td><td style="text-align:right;color:${saldoOC>0?'#1B4332':'#C03030'};font-weight:600">${fMonto(saldoOC,mon)}</td></tr>`;
   }).join('');
 
-  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  const obraSlug=(p.nombre||'Estado-de-Cobros').replace(/[^a-zA-Z0-9\u00C0-\u024F ]/g,'').trim().replace(/ +/g,'_').substring(0,40);
+  const hoy=new Date();
+  const fechaSlug=String(hoy.getFullYear())+String(hoy.getMonth()+1).padStart(2,'0')+String(hoy.getDate()).padStart(2,'0');
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${obraSlug}_${fechaSlug}</title>
 <style>
 body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0;padding:0}
 .pg{padding:26px 32px}
